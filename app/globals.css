@@ -1,0 +1,359 @@
+@import "tailwindcss";
+
+/*
+ * Fluid artboard scaling.
+ * The whole site is designed on a 1920px artboard (390px on mobile). The root
+ * font-size scales with the viewport, and every Tailwind utility is rem-based,
+ * so the layout behaves like a Figma artboard zooming: no intermediate
+ * breakpoints, no reflow surprises. One spacing unit equals one artboard pixel.
+ * True device pixels (hairlines) must use explicit px values.
+ */
+:root {
+  --size-ideal: 1920;
+  --size-min: 1024px;
+  --size-max: 2560px;
+  --size-font: calc(clamp(var(--size-min), 100vw, var(--size-max)) / (var(--size-ideal) / 16));
+
+  /*
+   * There is no dark mode and no toggle. The page ground is white, and any
+   * block that should read as black opts in with data-scheme="dark". The token
+   * names never change, so every component keeps using bg-page-bg, text-muted,
+   * border-line and friends and simply inherits whichever scheme it sits in.
+   */
+  --page-bg: #ffffff;
+  --page-text: #050505;
+  --page-muted: #6e6e6e;
+  --page-line: rgba(5, 5, 5, 0.16);
+  --page-line-strong: rgba(5, 5, 5, 0.26);
+  --page-panel: rgba(5, 5, 5, 0.045);
+  --page-accent: #a30f22;
+  --page-star: #a97d18;
+  color-scheme: light;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --size-ideal: 390;
+    --size-font: calc(100vw / (var(--size-ideal) / 16));
+  }
+}
+
+html {
+  font-size: var(--size-font);
+  /*
+   * The same clip the body carries. On its own, `overflow-x: clip` on <body>
+   * does not stop the viewport from panning: the document element keeps its
+   * visible overflow and stays scrollable, which let the gallery's 3633px rail
+   * drag the whole page sideways. Clipping here too closes that off.
+   * `clip` and not `hidden` on purpose: hidden would make <html> a scroll
+   * container and break every position: sticky and every pin in the page (the
+   * gallery rail among them).
+   */
+  overflow-x: clip;
+}
+
+/*
+ * Section schemes.
+ * Alternating bands carry the page: white by default, black where a section
+ * opts in. The scheme is an attribute on the section wrapper, not on <html>,
+ * so both palettes are live on the same page at the same time and a component
+ * needs no knowledge of which band it landed in.
+ */
+[data-scheme="dark"] {
+  --page-bg: #050505;
+  --page-text: #ffffff;
+  --page-muted: #8f8f8f;
+  --page-line: rgba(255, 255, 255, 0.16);
+  --page-line-strong: rgba(255, 255, 255, 0.3);
+  --page-panel: rgba(255, 255, 255, 0.05);
+  --page-accent: #c8102e;
+  --page-star: #e0b357;
+  color-scheme: dark;
+}
+
+[data-scheme="light"] {
+  --page-bg: #ffffff;
+  --page-text: #050505;
+  --page-muted: #6e6e6e;
+  --page-line: rgba(5, 5, 5, 0.16);
+  --page-line-strong: rgba(5, 5, 5, 0.26);
+  --page-panel: rgba(5, 5, 5, 0.045);
+  --page-accent: #a30f22;
+  --page-star: #a97d18;
+  color-scheme: light;
+}
+
+/*
+ * Variants for the rare rule that must know which band it is in: `scheme-dark:`
+ * and `scheme-light:` compile to [data-scheme="…"] ancestor selectors. Almost
+ * nothing needs them, because the tokens already invert on their own.
+ */
+@custom-variant scheme-dark ([data-scheme="dark"] &);
+@custom-variant scheme-light ([data-scheme="light"] &);
+
+@theme inline {
+  --color-page-bg: var(--page-bg);
+  --color-page-text: var(--page-text);
+  --color-muted: var(--page-muted);
+  --color-line: var(--page-line);
+  --color-line-strong: var(--page-line-strong);
+  --color-panel: var(--page-panel);
+  --color-accent: var(--page-accent);
+  --color-star: var(--page-star);
+
+  /* Font wiring lives in layout.tsx; falls back to the scaffold's Geist var. */
+  --font-sans: var(--font-body, var(--font-geist-sans));
+  --font-mono: var(--font-plex-mono, ui-monospace, monospace);
+}
+
+@theme {
+  /* One spacing unit = one artboard pixel (0.0625rem = 1/16 rem). */
+  --spacing: 0.0625rem;
+
+  /*
+   * Fixed neutrals, identical in both themes (bg-ink, text-bone). Same solid
+   * black / pure white as the themed palette, so surfaces that never invert
+   * (footer, mobile menu) sit in the same ink family as the rest of the site.
+   */
+  --color-ink: #050505;
+  --color-bone: #ffffff;
+
+
+  /*
+   * Radius scale, in the Revolut register: soft rectangles, never capsules,
+   * and the same three steps everywhere so surfaces read as one system.
+   * Buttons 12, cards and panels 20, media plates 24 artboard px.
+   */
+  --radius-btn: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-media: 1.5rem;
+
+  /* Type scale on the 1920 artboard. */
+  --text-h0: 6.25rem;
+  --text-h0--line-height: 1;
+  --text-h0--letter-spacing: -0.025em;
+  --text-h1: 4.375rem;
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.022em;
+  --text-h2: 3.75rem;
+  --text-h2--line-height: 1.06;
+  --text-h2--letter-spacing: -0.022em;
+  --text-h3: 2.375rem;
+  --text-h3--line-height: 1.26;
+  --text-h3--letter-spacing: -0.02em;
+  --text-h4: 1.625rem;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.01em;
+  --text-p1: 1.375rem;
+  --text-p1--line-height: 1.36;
+  --text-p2: 1rem;
+  --text-p2--line-height: 1.4;
+  --text-marquee: 13.75rem;
+  --text-marquee--line-height: 1;
+  --text-marquee--letter-spacing: -0.02em;
+
+  /* Mobile type scale (390 artboard), used with max-md:. */
+  --text-mh1: 2.75rem;
+  --text-mh1--line-height: 1.08;
+  --text-mh1--letter-spacing: -0.02em;
+  --text-mh2: 2rem;
+  --text-mh2--line-height: 1.1;
+  --text-mh2--letter-spacing: -0.02em;
+  --text-mh3: 1.5rem;
+  --text-mh3--line-height: 1.25;
+  --text-mp1: 1.125rem;
+  --text-mp1--line-height: 1.4;
+  --text-mp2: 0.875rem;
+  --text-mp2--line-height: 1.45;
+
+  /* Motion vocabulary (generates ease-osmo, ease-pill, ease-theme utilities). */
+  --ease-osmo: cubic-bezier(0.625, 0.05, 0, 1);
+  --ease-pill: cubic-bezier(0.65, 0.1, 0, 1);
+  --ease-theme: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+body {
+  background-color: var(--page-bg);
+  color: var(--page-text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/*
+ * Selection is always white on the accent red. It used to paint --page-bg as the
+ * text color, which on the new light palette left near-black on deep red at
+ * 2.6:1 (unreadable); white clears 5.9:1 on the dark accent and 7.9:1 on the
+ * light one, and matches the "details in white" rule.
+ */
+::selection {
+  background-color: var(--page-accent);
+  color: var(--color-bone);
+}
+
+/*
+ * Focus ring in the page's own ink, not the accent. On the new solid ground the
+ * accent red only reaches 3.5:1 against #050505 and all but vanishes on an
+ * accent-filled button, while white/near-black hits 20.4:1 against the page in
+ * both themes. The 3px offset keeps the ring sitting on the page background, so
+ * that page-level contrast is the one that applies even on colored controls.
+ */
+:focus-visible {
+  outline: 2px solid var(--page-text);
+  outline-offset: 3px;
+}
+
+/* Hairlines and muted copy, painted from whichever scheme the block sits in. */
+.themed-line {
+  background-color: var(--page-line);
+}
+.themed-border {
+  border-color: var(--page-line);
+}
+.themed-muted {
+  color: var(--page-muted);
+}
+
+/*
+ * Signature trace occluder.
+ * Content blocks the trace passes behind carry this class so the cord is
+ * occluded by text and images and only shows in the gaps. It is nothing but an
+ * opaque page-colored plate, so the block keeps its own stacking position above
+ * the trace and no clip path or mask is needed anywhere.
+ */
+.trace-occlude {
+  background-color: var(--page-bg);
+}
+
+/*
+ * Animated underline for links. Draws in from the left on hover, exits to the
+ * right on leave (the classic origin flip). Used by nav links and inline links.
+ */
+.underline-link {
+  position: relative;
+}
+.underline-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.15em;
+  width: 100%;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.6s var(--ease-osmo);
+}
+.underline-link:hover::after,
+.underline-link:active::after,
+.underline-link:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+/* Persistent variant: starts drawn, retracts and redraws on hover. */
+.underline-link.is-drawn::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.underline-link.is-drawn:hover::after {
+  animation: underline-redraw 0.9s var(--ease-osmo);
+}
+@keyframes underline-redraw {
+  0% { transform: scaleX(1); transform-origin: right center; }
+  49% { transform: scaleX(0); transform-origin: right center; }
+  51% { transform: scaleX(0); transform-origin: left center; }
+  100% { transform: scaleX(1); transform-origin: left center; }
+}
+
+/*
+ * Film grain overlay (ported from shelf/backgrounds/noise-grain).
+ * One SVG feTurbulence tile jitters its position in 4 discrete steps, which
+ * reads as analog grain while animating transform only. Sits above content but
+ * is fully click-through.
+ *
+ * The overhang is 10%, not the shelf demo's 50%: the largest drift step is 6%
+ * of the element, so 10% is all that is needed to keep an edge from showing,
+ * and it keeps the promoted layer at 1.44x viewport instead of 4x. That matters
+ * on phones, where this layer is composited every frame at full DPR.
+ *
+ * Opacity is 0.035, down from 0.05: the old ground was a warm #121110 that
+ * swallowed the noise, while a solid #050505 shows every grain dot, and the
+ * point is a faint film texture, not visible dirt on the black.
+ */
+.grain {
+  position: fixed;
+  inset: -10%;
+  z-index: 40;
+  pointer-events: none;
+  will-change: transform;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  animation: grain-drift 0.5s steps(4) infinite;
+}
+@keyframes grain-drift {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-6%, 4%); }
+  66% { transform: translate(5%, -5%); }
+  100% { transform: translate(-4%, -3%); }
+}
+
+/*
+ * Map marker halo: a ring that swells and fades on a 1.6s loop. Only runs once
+ * the marker is scrolled into view (.in-view set by the section), so an offscreen
+ * map costs nothing.
+ */
+.marker-pulse {
+  animation: none;
+}
+.marker-pulse.in-view,
+.in-view .marker-pulse {
+  animation: marker-pulse 1.6s ease-out infinite;
+}
+@keyframes marker-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Hide scrollbars on native horizontal rails (mobile rails). */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Lenis recommended base styles. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .underline-link::after {
+    transition: none;
+  }
+  .grain {
+    animation: none;
+  }
+  .marker-pulse.in-view,
+  .in-view .marker-pulse {
+    animation: none;
+  }
+}
+
+/*
+ * Same crossfade for non-body surfaces that paint --page-bg (e.g. the content
+ * wrapper that slides over the fixed footer). Gated like the body transition.
+ */
