@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
+import { Preloader } from "@/components/layout/preloader";
 import { JsonLd, barberShopJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/content/site";
 import "./globals.css";
@@ -50,6 +51,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        {/* The opening sequence. Mounted here and not in page.tsx because it
+            covers the whole document, navbar included, and it hands off to the
+            hero with an event rather than by nesting inside it. Renders nothing
+            at all under reduced motion or once a session has seen it. */}
+        <Preloader />
         <div className="grain" aria-hidden />
         <JsonLd data={barberShopJsonLd()} />
       </body>

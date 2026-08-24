@@ -97,3 +97,19 @@ export const menuPhotos: Photo[] = [
     orientation: "square",
   },
 ];
+
+/*
+ * The six plates that fan out in the opening sequence. A spread rather than a
+ * theme: the barber at work, two designs, a beard, a kid and a crop, so the
+ * stack reads as a body of work in the couple of seconds it is on screen.
+ * Decorative and rendered aria-hidden inside the panel, so these repeat frames
+ * that appear elsewhere without competing with them.
+ */
+export const preloaderPhotos: Photo[] = [
+  miguelAtWork,
+  { id: "pre-locs", src: p("cut-locs-design"), alt: "", orientation: "portrait" },
+  { id: "pre-logo", src: p("cut-logo-design"), alt: "", orientation: "portrait" },
+  { id: "pre-taper", src: p("cut-beard-taper"), alt: "", orientation: "square" },
+  { id: "pre-kid", src: p("cut-kid-hard-part"), alt: "", orientation: "square" },
+  { id: "pre-crop", src: p("cut-textured-crop"), alt: "", orientation: "square" },
+];

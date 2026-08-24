@@ -42,6 +42,8 @@ export interface Geo {
 
 export interface Site {
   name: string;
+  /** Display form for the giant hero wordmark, where the full name is too long. */
+  shortName: string;
   bookingUrl: string;
   phone: string;
   /** wa.me deep link built from the digits of `phone`. Placeholder number. */
@@ -56,6 +58,10 @@ export interface Site {
 
 export const SITE: Site = {
   name: "MR Society Barber Studio",
+
+  /* The full name runs to 24 characters and cannot be set at display size
+     without shrinking to nothing. The hero and the opening sequence use this. */
+  shortName: "MR Society",
 
   /* Booking runs on Booksy; there is no in-house booking engine to build. */
   bookingUrl:
