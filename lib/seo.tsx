@@ -19,8 +19,28 @@ import type { Faq } from "@/lib/content/faq";
  * production output, the environment variable was not set, and that is easier
  * to spot in a share preview than a plausible-looking placeholder domain.
  */
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+function resolveSiteUrl(): string {
+  /* 1. An explicit domain always wins, and is what a real custom domain sets. */
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  /*
+   * 2. Vercel injects this at build with the project's production domain, no
+   *    dashboard configuration required. It means a deploy has a correct
+   *    canonical from its very first build instead of the chicken-and-egg of
+   *    needing the URL before the URL exists. It also sidesteps a known local
+   *    hazard: `vercel env add` silently stores EMPTY values from a non-TTY
+   *    shell on this machine.
+   */
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+
+  /* 3. Deliberately obvious. If localhost reaches production output, neither of
+        the above was set, and that is easier to spot than a plausible fake. */
+  return "http://localhost:3000";
+}
+
+export const SITE_URL = resolveSiteUrl();
 
 /*
  * The `days` labels in SITE.hours are written for humans; schema.org wants
