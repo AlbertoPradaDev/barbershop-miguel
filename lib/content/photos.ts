@@ -1,92 +1,99 @@
 /*
- * Photography source of truth. Every frame is a hotlinked Pexels photo built by
- * `pexels(id, width)`, so swapping a picture means swapping one number. Each
- * entry is commented with what the frame actually shows, and every id below has
- * been opened and looked at, not just status checked.
+ * Photography source of truth.
  *
- * URL shape: images.pexels.com/photos/<id>/pexels-photo-<id>.jpeg?...&w=<width>
- * The CDN scales on width only, so intrinsic ratios vary. Consumers use
- * next/image `fill` plus a container aspect ratio, and the `orientation` field
- * says which way a frame leans so it can be placed where it will crop well.
+ * Every frame is the CLIENT'S OWN photograph, published on his Booksy profile
+ * and pulled down on 2026-08-24, re-encoded once and served from /public/photos
+ * rather than hotlinked. Self hosted on purpose: hotlinking Booksy's CDN would
+ * put the site's imagery on a third party's storage, break the moment they move
+ * a key, and lean on bandwidth that is not ours.
+ *
+ * The thirteen review photos on the Booksy profile are deliberately NOT here.
+ * Those were uploaded by clients writing reviews, so they are the reviewers'
+ * pictures to license, not the shop's.
+ *
+ * Alt text is real English, read aloud by screen readers, so never lorem ipsum,
+ * and it describes the CUT, since that is the information a sighted visitor is
+ * getting from these frames.
  */
 
-export type Orientation = "portrait" | "landscape";
+export type Orientation = "portrait" | "landscape" | "square";
 
 export interface Photo {
-  /** Pexels photo id, the only value you need to change to swap the image. */
-  id: number;
+  /** Stable key. Consumers render lists off this rather than off the path. */
+  id: string;
   src: string;
   /** Real English, read aloud by screen readers, so never lorem ipsum. */
   alt: string;
   orientation: Orientation;
 }
 
-/** Builds a width scaled Pexels CDN url for a photo id. */
-export function pexels(id: number, w: number): string {
-  return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
-}
+/** Everything lives under /public/photos, so a path is all a consumer needs. */
+const p = (name: string) => `/photos/${name}.jpg`;
 
-/**
- * About section. Two uprights and one wide, so a layout can pair the tall
- * frames and let the wide one run full bleed underneath.
+/* The barber himself. Both of these are photographs of Miguel, and they are the
+   only two frames on the site with a recognisable face doing the work. */
+export const miguelPortrait: Photo = {
+  id: "miguel-portrait",
+  src: p("miguel-portrait"),
+  alt: "Miguel Rangel, arms folded, in a black cap and t-shirt",
+  orientation: "square",
+};
+
+export const miguelAtWork: Photo = {
+  id: "miguel-at-work",
+  src: p("miguel-at-work"),
+  alt: "Miguel lining up a client's hair, clippers in a gloved hand",
+  orientation: "landscape",
+};
+
+/*
+ * About section. The layout destructures this as [upright, upright, wide], so
+ * the ORDER here is the layout: change it and the plates change places. The
+ * third frame carries the room itself (chairs, mirrors, the ceiling lights),
+ * which is what the wide plate is there to show.
  */
 export const aboutPhotos: Photo[] = [
   {
-    // Vintage red leather barber chair beside a storefront window, wood floor.
-    id: 12505400,
-    src: pexels(12505400, 900),
-    alt: "Vintage red leather barber chair beside the shop window",
+    id: "cut-braids-beard",
+    src: p("cut-braids-beard"),
+    alt: "Braided cornrows finished with a lined beard",
     orientation: "portrait",
   },
   {
-    // Barber and caped client at a mirror station, CUT BARBERSHOP window sign.
-    id: 4625617,
-    src: pexels(4625617, 900),
-    alt: "Barber standing with a caped client at the mirror station",
+    id: "cut-locs-design",
+    src: p("cut-locs-design"),
+    alt: "Locs tied up above a shaved design at the temple",
     orientation: "portrait",
   },
   {
-    // Wide shop floor: exposed brick, two chairs, wash basin, framed prints.
-    id: 7518739,
-    src: pexels(7518739, 1600),
-    alt: "Wide view of the shop floor with brick walls and two barber chairs",
-    orientation: "landscape",
+    id: "cut-design-kid",
+    src: p("cut-design-kid"),
+    alt: "A freehand design cut into a young client's fade, the shop floor behind",
+    orientation: "portrait",
   },
 ];
 
-/**
- * Mobile menu backdrop. Dark, texture heavy frames with no faces, so nav labels
- * stay readable on top of them.
+/*
+ * Backdrop layers behind the mobile menu's ink panel: three frames that ken
+ * burns and crossfade under the nav links. Purely decorative, rendered
+ * aria-hidden with empty alt, which is why these reuse frames that already
+ * appear elsewhere on the page. There are twelve business owned photographs in
+ * total and every one is doing a job; borrowing three for a blurred backdrop
+ * behind a menu costs nothing, where padding a visible gallery with repeats
+ * would have been obvious.
  */
 export const menuPhotos: Photo[] = [
+  miguelAtWork,
   {
-    // Row of barber scissors hanging on a dark walnut wall rack.
-    id: 1319460,
-    src: pexels(1319460, 720),
-    alt: "Barber scissors hanging in a row on a wooden rack",
-    orientation: "landscape",
-  },
-  {
-    // Station counter laid with clippers, guards, combs and brushes on a towel.
-    id: 7518717,
-    src: pexels(7518717, 720),
-    alt: "Clippers, guards and combs laid out on a station towel",
+    id: "menu-braids",
+    src: p("cut-braids-beard"),
+    alt: "",
     orientation: "portrait",
   },
   {
-    // Clippers on white subway tile above shave soap, neon glow at the edge.
-    id: 11213193,
-    src: pexels(11213193, 720),
-    alt: "Clippers hanging on white tile above shave soap tins",
-    orientation: "portrait",
+    id: "menu-crop",
+    src: p("cut-textured-crop"),
+    alt: "",
+    orientation: "square",
   },
 ];
-
-/** Street level shopfront, used where the map cannot load. */
-export const mapFallback: Photo = {
-  // Painted BARBER SHOP fascia with a spinning pole and a price board.
-  id: 37514899,
-  src: pexels(37514899, 1200),
-  alt: "Painted barber shop sign above the door with a barber pole beside it",
-  orientation: "landscape",
-};

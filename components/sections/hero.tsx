@@ -7,7 +7,7 @@ import { MaskedText } from "@/components/ui/masked-text";
 import { PillButton } from "@/components/ui/pill-button";
 import { useLenis } from "@/components/providers/smooth-scroll-provider";
 import { SITE } from "@/lib/content/site";
-import { pexels } from "@/lib/content/photos";
+import { miguelAtWork } from "@/lib/content/photos";
 
 /*
  * Hero: editorial expand. The display lines sit on the band's own ink ground
@@ -53,9 +53,18 @@ const TITLE_LINES = [
   "Time",
 ] as const;
 
-/* Wide frame at rest, full screen at p=1, so it is served and sized at 100vw. */
-const PHOTO_SRC = pexels(2076930, 1920);
-const PHOTO_ALT = "Barber combing and cutting a client's hair at the chair";
+/*
+ * Wide frame at rest, full screen at p=1, so it is sized at 100vw.
+ *
+ * This is the client's own photograph and the only landscape frame he
+ * publishes, which is why it is here and not in the gallery: it is the one shot
+ * with the barber, his hands and a client in it. NOTE for the client ask, it is
+ * 1008x672, so it upscales about 1.9x when the frame reaches full bleed on a
+ * 1920 screen. The scrim covers for it, but a larger original is worth asking
+ * for since this is the LCP image and the first thing anyone sees.
+ */
+const PHOTO_SRC = miguelAtWork.src;
+const PHOTO_ALT = miguelAtWork.alt;
 const PHOTO_SIZES = "100vw";
 
 /*
@@ -329,9 +338,19 @@ export function Hero() {
               fill
               sizes={PHOTO_SIZES}
               priority
-              /* Arbitrary transform, not the scale utility: GSAP writes the
-                 transform property, so the two can never compose. */
-              className="object-cover [transform:scale(1.16)]"
+              /*
+               * Arbitrary transform, not the scale utility: GSAP writes the
+               * transform property, so the two can never compose.
+               *
+               * object-position is biased UP because the resting frame is a
+               * letterbox roughly 3.9:1 while the photograph is 3:2, so at p=0
+               * only about 38% of its height survives the crop. Centred, that
+               * band lands on a torso and a forearm and cuts both heads off.
+               * At 30% it lands on the barber's face and the client's, which is
+               * the whole subject of the frame. Full bleed is barely affected:
+               * at p=1 the crop keeps 94% of the height either way.
+               */
+              className="object-cover object-[50%_30%] [transform:scale(1.16)]"
             />
             <div
               data-hero-scrim
