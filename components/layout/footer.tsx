@@ -38,8 +38,9 @@ import { SITE } from "@/lib/content/site";
 /* Echoes the barber's own description of the work: precision, comfort, care. */
 const HEADLINE = ["Precision,", "every cut."] as const;
 const DESCRIPTOR = "Barbershop, Raleigh NC";
-const TEL = `tel:${SITE.phone.replace(/[^\d+]/g, "")}`;
-const MAILTO = `mailto:${SITE.email}`;
+/* Null-safe: no number means no dialler link, not a dead one. */
+const TEL = SITE.phone ? `tel:${SITE.phone.replace(/[^\d+]/g, "")}` : null;
+const MAILTO = SITE.email ? `mailto:${SITE.email}` : null;
 
 /*
  * Barber pole ribbon.
@@ -232,16 +233,20 @@ export function Footer() {
           <div>
             <span className={COLUMN_LABEL}>Say hello</span>
             <ul className={COLUMN_LIST}>
-              <li>
-                <a href={TEL} className="underline-link">
-                  {SITE.phone}
-                </a>
-              </li>
-              <li>
-                <a href={MAILTO} className="underline-link">
-                  {SITE.email}
-                </a>
-              </li>
+              {TEL && (
+                <li>
+                  <a href={TEL} className="underline-link">
+                    {SITE.phone}
+                  </a>
+                </li>
+              )}
+              {MAILTO && (
+                <li>
+                  <a href={MAILTO} className="underline-link">
+                    {SITE.email}
+                  </a>
+                </li>
+              )}
               <li>
                 <a
                   href={SITE.bookingUrl}

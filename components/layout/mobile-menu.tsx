@@ -81,8 +81,9 @@ const HOVER_QUERY = "(hover: hover) and (pointer: fine)";
 const STRIPE_TRAVEL = 20 * Math.SQRT2;
 const STRIPE_SECONDS = 1.9;
 
-/* Dialer link: the display number keeps its spacing, the href keeps digits. */
-const TEL_HREF = `tel:+${SITE.phone.replace(/\D/g, "")}`;
+/* Dialer link: the display number keeps its spacing, the href keeps digits.
+   Null while the client still owes us a real number. */
+const TEL_HREF = SITE.phone ? `tel:+${SITE.phone.replace(/\D/g, "")}` : null;
 
 const ROOT = [
   "group/menu fixed inset-x-0 top-0 z-[60] h-[100dvh] hidden max-md:block",
@@ -491,9 +492,11 @@ export function MobileMenu({
                   );
                 })}
               </div>
-              <a href={TEL_HREF} className={META_LINK}>
-                {SITE.phone}
-              </a>
+              {TEL_HREF && (
+                <a href={TEL_HREF} className={META_LINK}>
+                  {SITE.phone}
+                </a>
+              )}
             </div>
           </div>
         </div>

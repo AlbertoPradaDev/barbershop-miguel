@@ -45,10 +45,16 @@ export interface Site {
   /** Display form for the giant hero wordmark, where the full name is too long. */
   shortName: string;
   bookingUrl: string;
-  phone: string;
-  /** wa.me deep link built from the digits of `phone`. Placeholder number. */
-  whatsapp: string;
-  email: string;
+  /**
+   * NULL until the client supplies the real one. Every consumer treats null as
+   * "do not render this control" rather than rendering a dead link, so filling
+   * these in is the only step needed to bring the phone, email and WhatsApp
+   * affordances back across the whole site.
+   */
+  phone: string | null;
+  /** wa.me deep link. Null while `phone` is null. */
+  whatsapp: string | null;
+  email: string | null;
   address: Address;
   geo: Geo;
   hours: Hours[];
@@ -68,18 +74,22 @@ export const SITE: Site = {
     "https://booksy.com/en-us/1000069_miguel-mr-society-barber-studio_barber-shop_27100_raleigh",
 
   /*
-   * LAUNCH BLOCKER: these three are NOT real yet. Booksy gates the shop's phone
-   * and email behind an account, so they have to come from the client directly.
-   * The number below is inside the 555-0100 to 555-0199 block reserved for
-   * fiction, on the Raleigh area code, so it cannot ring a real person while it
-   * sits here. The site puts a tel: link in the header, the footer, the mobile
-   * menu and the contact section, a mailto: in the footer and contact section,
-   * and a WhatsApp deep link in the floating button, so all of that is inert
-   * until these are filled in.
+   * STILL OWED BY THE CLIENT. Booksy gates the shop's phone and email behind an
+   * account, so they have to come from Miguel directly.
+   *
+   * These held a placeholder from the reserved 555 range, which was worse than
+   * holding nothing: it rendered as a real number in four places, the WhatsApp
+   * button deep-linked to it, and it went out in the JSON-LD as machine-readable
+   * fact. A visitor tapping "call" got a dialler loaded with fiction.
+   *
+   * Null instead. Every consumer hides its control rather than rendering a dead
+   * link, and the structured data omits the field entirely. Fill these three in
+   * and the tel: link, the mailto:, the WhatsApp button and the schema.org
+   * telephone all come back on their own, with no other edit anywhere.
    */
-  phone: "+1 (919) 555 0142",
-  whatsapp: "https://wa.me/19195550142",
-  email: "hello@example.com",
+  phone: null,
+  whatsapp: null,
+  email: null,
 
   address: {
     street: "2900 Spring Forest Rd, Ste 108",

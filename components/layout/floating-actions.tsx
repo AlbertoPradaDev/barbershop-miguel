@@ -41,6 +41,19 @@ const CONTROL = [
 export function FloatingActions() {
   const root = useRef<HTMLDivElement>(null);
 
+  /*
+   * No number, no button. This control is specifically a WhatsApp link, glyph
+   * and label included, so without a number it has no function and pointing it
+   * at the booking page instead would be a WhatsApp mark that does not open
+   * WhatsApp. Booking is not lost either way: the navbar carries the solid
+   * "Book now" pill at every scroll position. Fill in SITE.whatsapp and this
+   * returns on its own.
+   */
+  const href = SITE.whatsapp;
+
+  /* Hooks must run before this returns, so the guard sits below useGSAP and the
+     effect simply finds no [data-fab-item] to animate. */
+
   useGSAP(
     () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -60,11 +73,21 @@ export function FloatingActions() {
     { scope: root },
   );
 
+  if (!href) return null;
+
   return (
-    <div ref={root} className={ROOT}>
+    /* A complementary landmark, so someone navigating by landmark can reach
+       this at all: as a bare child of <body> it was invisible to that mode,
+       which is what axe's `region` rule was reporting. */
+    <div
+      ref={root}
+      role="complementary"
+      aria-label="Contact shortcuts"
+      className={ROOT}
+    >
       <a
         data-fab-item
-        href={SITE.whatsapp}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"

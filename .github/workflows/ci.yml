@@ -1,0 +1,44 @@
+# The gate the audit found missing: there was no automated check of any kind on
+# this repository, so a broken build could only be discovered by someone running
+# it locally.
+#
+# It runs the three things that already pass and must keep passing. It is
+# deliberately not a test suite — there are no unit tests yet, and pretending
+# otherwise would be worse than admitting it — but a type error, a lint failure
+# or a build break can no longer reach main unnoticed.
+#
+# Note the --webpack flags. Turbopack needs native SWC bindings; keeping the
+# webpack path here matches how the site is built locally, where Windows Smart
+# App Control blocks that binary.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` and not `npm install`: it installs exactly what the lockfile
+      # pins and fails loudly if package.json and the lockfile disagree, which
+      # is the drift this repo has already seen between two developers' npm
+      # versions.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Build
+        run: npx next build --webpack

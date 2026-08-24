@@ -306,8 +306,20 @@ export function OpeningSequence() {
       SKIP_ON.forEach((type) =>
         window.addEventListener(type, skip, { once: true, passive: true }),
       );
-      detachSkip = () =>
+
+      /*
+       * The window listeners above already caught any input, but nothing on
+       * screen SAID so, which made the escape hatch useful only to people who
+       * happen to fidget. The button below is the visible half of the same
+       * mechanism; this is how it reaches this timeline.
+       */
+      const button = root.current.querySelector<HTMLElement>("[data-seq-skip]");
+      button?.addEventListener("click", skip);
+
+      detachSkip = () => {
         SKIP_ON.forEach((type) => window.removeEventListener(type, skip));
+        button?.removeEventListener("click", skip);
+      };
 
       TAGS.forEach((_, i) => {
         tl.to(
@@ -431,6 +443,22 @@ export function OpeningSequence() {
           >
             <Lockup side="top" />
           </div>
+          {/*
+            Above the panels at z-83 so it is never covered by them, and a real
+            <button> so it is in the tab order and announced. aria-hidden is
+            explicitly turned OFF here: the wrapper carries aria-hidden for the
+            decorative type, and this control is the one thing inside it that a
+            screen reader user genuinely needs.
+          */}
+          <button
+            type="button"
+            data-seq-skip
+            aria-hidden={false}
+            className="fixed right-32 bottom-32 z-[83] cursor-pointer rounded-full border border-bone/30 bg-transparent px-24 py-12 font-mono text-mp2 tracking-[0.12em] text-bone/70 uppercase transition-colors duration-300 hover:border-bone/60 hover:text-bone focus-visible:border-bone focus-visible:text-bone max-md:right-20 max-md:bottom-20 max-md:px-20 max-md:py-10"
+          >
+            Skip
+          </button>
+
           <div className="pointer-events-none fixed inset-0 z-[82]">
             {TAGS.map((tag, i) => (
               <div

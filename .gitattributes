@@ -1,0 +1,15 @@
+# One repo, two Windows machines and eventually a CI runner. Without this,
+# a checkout on a differently-configured machine rewrites every line ending and
+# the next diff is the whole file.
+* text=auto eol=lf
+
+# Binary: never normalise, never diff as text.
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.webp  binary
+*.avif  binary
+*.mp4   binary
+*.woff  binary
+*.woff2 binary
+*.ico   binary
