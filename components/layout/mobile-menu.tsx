@@ -5,28 +5,19 @@
  * whatever colour band it opens over, and driven almost entirely by one
  * data-open attribute on the root: every layer below is a plain CSS transition
  * keyed off that attribute, so opening costs no JavaScript beyond a setState.
- * GSAP only owns the two idle loops (ken burns, barber pole), which exist only
- * while open.
+ * GSAP only owns the single idle loop (ken burns), which exists only while open.
  *
  * Motion recipe:
- *   curtain  two stacked panels drop from above, each 48px short of the
- *            viewport so the hem is visible. The accent underlayer runs
- *            translateY(calc(-100% - 5.5rem)) -> 6px over 0.55s on
+ *   curtain  two stacked full height panels drop from above. The accent
+ *            underlayer runs translateY(-100%) -> 0 over 0.55s on
  *            cubic-bezier(0.76,0,0.24,1) and the ink panel follows it 0.08s
- *            later, landing at 0, so the accent stays as a 6px rim tracing the
- *            hem. Closing reverses the pair: ink leads, accent trails by 0.08s.
- *   hem      an inline SVG arc hangs off each panel's bottom edge, filled with
- *            that panel's own color. It travels at scaleY(1.55) (a deep, heavy
- *            cape) and settles to scaleY(1) over 0.55s ease-osmo, 0.42s in, so
- *            the curve relaxes just after the panel lands. transform only.
+ *            later onto the same rest, so the accent reads only as the leading
+ *            edge of the drop. Closing reverses the pair: ink leads, accent
+ *            trails by 0.08s. Both panels sit flush with the viewport bottom.
  *   backdrop one menuPhotos frame per layer behind the panel at 0.22 opacity,
  *            drifting scale 1.06 <-> 1.12 over 12s (yoyo, sine.inOut). On fine
  *            pointers, hovering a link crossfades to that link's own frame over
  *            0.6s ease-osmo through a data-active attribute, no re-render.
- *   pole     a 12px rail down the left edge holds a 45deg accent/bone stripe
- *            block that GSAP translates up by one pattern period (20 * sqrt2
- *            device px) on a 1.9s linear loop, so the stripes travel forever
- *            without a seam. transform only, inside overflow-hidden.
  *   links    each sits in its own overflow-hidden mask and rises
  *            translateY(110%) -> 0 over 0.6s on cubic-bezier(0.2,0.7,0.2,1),
  *            staggered 0.25s to 0.67s through a --reveal-delay custom property
@@ -40,8 +31,8 @@
  * the burger. Closed, the whole panel is inert, so nothing inside it is
  * focusable or clickable, and the photos are not even in the DOM until the menu
  * has been opened once.
- * Reduced motion: every transform is dropped, the ken burns and the pole never
- * start, and the panel simply fades in and out over 0.2s.
+ * Reduced motion: every transform is dropped, the ken burns never starts, and
+ * the panel simply fades in and out over 0.2s.
  */
 
 import {
@@ -75,12 +66,6 @@ const FOCUSABLE =
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
 const HOVER_QUERY = "(hover: hover) and (pointer: fine)";
 
-/* The 45deg stripe pattern repeats every 20 device px along its own axis, so a
-   vertical shift only lands back on itself after 20 / cos(45deg) px. Animating
-   exactly that distance makes the loop seamless with no wrap logic. */
-const STRIPE_TRAVEL = 20 * Math.SQRT2;
-const STRIPE_SECONDS = 1.9;
-
 /* Dialer link: the display number keeps its spacing, the href keeps digits.
    Null while the client still owes us a real number. */
 const TEL_HREF = SITE.phone ? `tel:+${SITE.phone.replace(/\D/g, "")}` : null;
@@ -92,22 +77,21 @@ const ROOT = [
   "motion-reduce:data-[open=true]:opacity-100",
 ].join(" ");
 
-/* 48px short of the bottom: that strip is where the arc hangs. The closed
-   transform clears the panel plus the deepest arc (48 * 1.55 plus the accent's
-   6px offset), so nothing peeks below the viewport top while shut. */
+/* Full height, straight bottom edge: the panel meets the viewport bottom with
+   no gap open, and translateY(-100%) puts it exactly out of sight when shut. */
 const PANEL_BASE = [
-  "absolute inset-x-0 top-0 h-[calc(100%-3rem)]",
-  "[transform:translateY(calc(-100%_-_5.5rem))]",
+  "absolute inset-x-0 top-0 h-full",
+  "[transform:translateY(-100%)]",
   "motion-reduce:[transform:none] motion-reduce:transition-none",
 ].join(" ");
 
-/* Leads on the way in, trails by 0.08s on the way out, and rests 6px lower so
-   it survives as a rim along the hem instead of a one beat flash. */
+/* Leads on the way in, trails by 0.08s on the way out, so it only ever reads as
+   the leading edge of the drop. */
 const PANEL_ACCENT = [
   PANEL_BASE,
   "bg-accent",
   "[transition:transform_0.42s_cubic-bezier(0.76,0,0.24,1)_0.08s]",
-  "group-data-[open=true]/menu:[transform:translateY(0.375rem)]",
+  "group-data-[open=true]/menu:[transform:translateY(0)]",
   "group-data-[open=true]/menu:[transition:transform_0.55s_cubic-bezier(0.76,0,0.24,1)]",
 ].join(" ");
 
@@ -120,17 +104,6 @@ const PANEL_INK = [
   "group-data-[open=true]/menu:[transition:transform_0.55s_cubic-bezier(0.76,0,0.24,1)_0.08s]",
 ].join(" ");
 
-/* The hem. Scales from a deep arc to a shallow one once the panel has landed;
-   scaleY on the wrapper is one composited property, so no path is re-rasterised. */
-const ARC = [
-  "pointer-events-none absolute inset-x-0 top-full block h-48 origin-top",
-  "[transform:scaleY(1.55)]",
-  "[transition:transform_0.3s_ease]",
-  "group-data-[open=true]/menu:[transform:scaleY(1)]",
-  "group-data-[open=true]/menu:[transition:transform_0.55s_var(--ease-osmo)_0.42s]",
-  "motion-reduce:[transform:scaleY(1)] motion-reduce:transition-none",
-].join(" ");
-
 /* Photographic backdrop. No blur anywhere: opacity plus a slow scale only. */
 const BACKDROP = "absolute inset-0 block overflow-hidden opacity-[0.22]";
 
@@ -139,20 +112,6 @@ const PHOTO_LAYER = [
   "[transition:opacity_0.6s_var(--ease-osmo)]",
   "data-[active=true]:opacity-100",
   "motion-reduce:transition-none",
-].join(" ");
-
-/* Barber pole rail down the left edge of the curtain. */
-const RAIL = [
-  "pointer-events-none absolute bottom-0 left-0 top-72 w-12 overflow-hidden",
-  "opacity-0 [transition:opacity_0.3s_ease]",
-  "group-data-[open=true]/menu:opacity-100",
-  "group-data-[open=true]/menu:[transition:opacity_0.5s_ease_0.3s]",
-  "motion-reduce:transition-none",
-].join(" ");
-
-const STRIPES = [
-  "absolute inset-x-0 -bottom-40 -top-40 block will-change-transform",
-  "[background-image:repeating-linear-gradient(45deg,var(--page-accent)_0_10px,var(--color-bone)_10px_20px)]",
 ].join(" ");
 
 const COLUMN = [
@@ -199,28 +158,15 @@ const BOTTOM_ROW = [
 ].join(" ");
 
 const META_LINK = [
-  "underline-link font-mono text-p2 max-md:text-mp2 uppercase tracking-[0.1em]",
+  "underline-link text-p2 max-md:text-mp2 font-medium uppercase tracking-[0.08em]",
   "text-bone/70 transition-colors duration-400 ease-out",
   "hover:text-accent active:text-accent focus-visible:text-accent",
   "motion-reduce:transition-none",
 ].join(" ");
 
-/* Shallow arc spanning the full width. The quadratic control point sits at
-   twice the depth, so the curve bottoms out at exactly the viewBox height. */
-function Hem({ className }: { className: string }) {
-  return (
-    <span aria-hidden className={className}>
-      <svg
-        viewBox="0 0 390 48"
-        preserveAspectRatio="none"
-        focusable="false"
-        className="block h-full w-full"
-      >
-        <path d="M0 0 Q195 96 390 0 Z" fill="currentColor" />
-      </svg>
-    </span>
-  );
-}
+/* The dialler row is the same label with tabular figures: it is nothing but
+   digits, and this keeps them on the even column the type used to give them. */
+const PHONE_LINK = META_LINK + " [font-variant-numeric:tabular-nums]";
 
 interface MobileMenuProps {
   id: string;
@@ -342,7 +288,7 @@ export function MobileMenu({
     [],
   );
 
-  /* The only two GSAP loops in the menu, and they exist only while it is open:
+  /* The only GSAP loop in the menu, and it exists only while the menu is open:
      a closed curtain must not keep a phone's compositor awake. */
   useGSAP(
     () => {
@@ -350,30 +296,19 @@ export function MobileMenu({
       if (!scope) return;
 
       const drifts = gsap.utils.toArray<HTMLElement>("[data-kenburns]", scope);
-      const stripes = gsap.utils.toArray<HTMLElement>("[data-stripes]", scope);
+      if (!drifts.length) return;
 
-      if (drifts.length) gsap.set(drifts, { scale: 1.06 });
-      if (stripes.length) gsap.set(stripes, { y: 0 });
+      gsap.set(drifts, { scale: 1.06 });
 
       if (!open || window.matchMedia(REDUCED_QUERY).matches) return;
 
-      if (drifts.length) {
-        gsap.to(drifts, {
-          scale: 1.12,
-          duration: 12,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-        });
-      }
-      if (stripes.length) {
-        gsap.to(stripes, {
-          y: -STRIPE_TRAVEL,
-          duration: STRIPE_SECONDS,
-          ease: "none",
-          repeat: -1,
-        });
-      }
+      gsap.to(drifts, {
+        scale: 1.12,
+        duration: 12,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+      });
     },
     { scope: root, dependencies: [open, armed] },
   );
@@ -401,9 +336,7 @@ export function MobileMenu({
       data-open={open ? "true" : "false"}
       className={ROOT}
     >
-      <span aria-hidden className={PANEL_ACCENT}>
-        <Hem className={`${ARC} text-accent`} />
-      </span>
+      <span aria-hidden className={PANEL_ACCENT} />
 
       <div className={PANEL_INK}>
         <span aria-hidden className={BACKDROP}>
@@ -431,12 +364,6 @@ export function MobileMenu({
                 </span>
               </span>
             ))}
-        </span>
-
-        <Hem className={`${ARC} text-ink`} />
-
-        <span aria-hidden className={RAIL}>
-          <span data-stripes className={STRIPES} />
         </span>
 
         <div className={COLUMN} data-lenis-prevent>
@@ -473,8 +400,8 @@ export function MobileMenu({
               {BOOK_LABEL}
             </PillButton>
 
-            {/* Two rows, not one: the mono number alone is 17 characters wide,
-                so a single row would wrap mid list on a 390 artboard. */}
+            {/* Two rows, not one: the dialler label is far the longest item
+                here, so a single row would wrap mid list on a 390 artboard. */}
             <div className="flex flex-col items-center gap-8">
               <div className="flex flex-wrap items-center justify-center gap-x-24 gap-y-8">
                 {SITE.socials.map((social) => {
@@ -493,7 +420,7 @@ export function MobileMenu({
                 })}
               </div>
               {TEL_HREF && (
-                <a href={TEL_HREF} className={META_LINK}>
+                <a href={TEL_HREF} className={PHONE_LINK}>
                   {SITE.phone}
                 </a>
               )}

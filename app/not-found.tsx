@@ -23,7 +23,9 @@ export default function NotFound() {
       data-scheme="dark"
       className="flex min-h-[100svh] flex-col items-center justify-center bg-page-bg px-64 text-center text-page-text max-md:px-20"
     >
-      <p className="font-mono text-p2 max-md:text-mp2 themed-muted">404</p>
+      <p className="text-p2 max-md:text-mp2 font-medium tracking-[0.08em] themed-muted">
+        404
+      </p>
 
       <h1 className="mt-24 text-h1 max-md:text-mh1 font-semibold">
         That page does not exist

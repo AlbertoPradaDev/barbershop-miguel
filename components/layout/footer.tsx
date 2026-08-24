@@ -31,6 +31,19 @@ import { SITE } from "@/lib/content/site";
  *             footer, which never moves, and not off the curtain, whose cached
  *             position would be measured mid parallax.
  *
+ * Height. The footer is capped at max-h-[100svh] and its own padding, gaps and
+ * wordmark are sized to land inside that box rather than be clipped by it: at
+ * 1440x900 the block measures 678px and at 390x844 it measures 731px. svh and
+ * not vh, so a mobile browser's collapsing chrome cannot push the cap past the
+ * screen. The wordmark is what used to overflow: at 11.5vw the full 24
+ * character name wrapped onto a second line and cost 331px on a laptop, so it
+ * is set at 7.8vw (7.6 on mobile), the largest size that still holds one line
+ * inside the artboard's own side padding at every viewport width. On mobile the
+ * three link columns fall to two rather than stacking into one tall strip, and
+ * the seven Explore links run two up inside a full width cell. That leaves the
+ * block short enough to clear 100svh on a phone whose browser chrome is fully
+ * expanded, not only on the nominal 844px artboard.
+ *
  * Under prefers-reduced-motion none of it is built: the lines are set to their
  * resting state, the curtain never leaves 0 and the ribbon simply sits still.
  */
@@ -71,7 +84,11 @@ const RIBBON_FILL = [
    opacity reads as flat grey instead of dimmed white. Every held-back value in
    this footer is expressed as bone alpha and lifted for that ground. */
 const COLUMN_LABEL = "text-p2 max-md:text-mp2 font-semibold text-bone/50";
-const COLUMN_LIST = "mt-16 flex flex-col gap-10 text-p1 max-md:text-mp1";
+const COLUMN_LIST = "mt-12 flex flex-col gap-8 text-p1 max-md:text-mp1";
+/* Seven links stacked one per line is the single tallest thing in the footer on
+   a phone. On mobile the Explore cell takes the full width of the two column
+   grid and its list runs two up, which turns seven rows into four. */
+const EXPLORE_LIST = "max-md:grid max-md:grid-cols-2 max-md:gap-x-24";
 
 export function Footer() {
   const wrap = useRef<HTMLElement>(null);
@@ -164,7 +181,7 @@ export function Footer() {
       id="site-footer"
       ref={wrap}
       data-scheme="dark"
-      className="relative overflow-hidden bg-ink text-bone"
+      className="relative max-h-[100svh] overflow-hidden bg-ink text-bone"
     >
       <span
         aria-hidden
@@ -179,9 +196,9 @@ export function Footer() {
 
       <div
         data-footer-inner
-        className="px-40 pt-120 pb-40 max-md:px-16 max-md:pt-80 max-md:pb-90 will-change-transform"
+        className="px-40 pt-88 pb-40 max-md:px-16 max-md:pt-48 max-md:pb-56 will-change-transform"
       >
-        <p className="mb-80 max-md:mb-56 text-h2 max-md:text-mh2 font-medium">
+        <p className="mb-64 max-md:mb-32 text-h2 max-md:text-mh2 font-medium">
           {HEADLINE.map((line) => (
             <span
               key={line}
@@ -194,10 +211,10 @@ export function Footer() {
           ))}
         </p>
 
-        <div className="grid grid-cols-3 gap-40 max-md:grid-cols-1 max-md:gap-40">
-          <div>
+        <div className="grid grid-cols-3 gap-40 max-md:grid-cols-2 max-md:gap-x-24 max-md:gap-y-24">
+          <div className="max-md:col-span-2">
             <span className={COLUMN_LABEL}>Explore</span>
-            <ul className={COLUMN_LIST}>
+            <ul className={`${COLUMN_LIST} ${EXPLORE_LIST}`}>
               {SITE.navLinks.map((link) => (
                 <li key={link.href}>
                   <a
@@ -215,18 +232,24 @@ export function Footer() {
           <div>
             <span className={COLUMN_LABEL}>Follow</span>
             <ul className={COLUMN_LIST}>
-              {SITE.socials.map((social) => (
-                <li key={social.label}>
-                  <a
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline-link"
-                  >
-                    {social.label}
-                  </a>
-                </li>
-              ))}
+              {SITE.socials.map((social) => {
+                /* Every entry in SITE.socials renders, and the http test is
+                   what decides the target: a profile URL opens in a new tab, a
+                   tel: or mailto: channel added later stays in this one. */
+                const external = /^https?:\/\//i.test(social.href);
+                return (
+                  <li key={social.label}>
+                    <a
+                      href={social.href}
+                      target={external ? "_blank" : undefined}
+                      rel={external ? "noopener noreferrer" : undefined}
+                      className="underline-link"
+                    >
+                      {social.label}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -263,16 +286,16 @@ export function Footer() {
 
         <p
           aria-hidden
-          className="mt-100 max-md:mt-60 text-center font-semibold leading-none tracking-tight text-[11.5vw] max-md:text-[13vw] select-none text-bone/95"
+          className="mt-80 max-md:mt-32 text-center font-semibold leading-none tracking-tight text-[7.8vw] max-md:text-[7.6vw] select-none text-bone/95"
         >
           {SITE.name}
         </p>
 
         {/* The floating WhatsApp control parks over the bottom right corner of
             the viewport. On desktop the copyright would run under it, so the
-            row keeps its column clear; on mobile the row stacks and the 90px
-            bottom padding already clears the button. */}
-        <div className="mt-40 flex items-center justify-between pr-64 text-p2 max-md:text-mp2 text-bone/50 max-md:flex-col max-md:items-start max-md:gap-8 max-md:pr-0">
+            row keeps its column clear; on mobile the row stacks to the left and the
+            72px bottom padding clears the 46px button in the corner. */}
+        <div className="mt-32 max-md:mt-20 flex items-center justify-between pr-64 text-p2 max-md:text-mp2 text-bone/50 max-md:flex-col max-md:items-start max-md:gap-8 max-md:pr-0">
           <span>{DESCRIPTOR}</span>
           <span>
             &copy; {new Date().getFullYear()} {SITE.name}

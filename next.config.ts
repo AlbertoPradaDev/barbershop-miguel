@@ -3,9 +3,10 @@ import type { NextConfig } from "next";
 /*
  * Content-Security-Policy.
  *
- * The site loads from NO third-party origin, so default-src 'self' costs
- * nothing. Three deliberate relaxations, and the first one is a real trade
- * rather than a shrug:
+ * The site loads no third-party CODE, and the only third-party origin it
+ * touches at all is the OpenStreetMap embed in the contact section, so
+ * default-src 'self' still costs next to nothing. Four deliberate
+ * relaxations, and the first one is a real trade rather than a shrug:
  *
  *   script-src 'unsafe-inline'
  *     The App Router streams its RSC payload through INLINE bootstrap scripts
@@ -40,6 +41,17 @@ import type { NextConfig } from "next";
  *   img-src data: blob:
  *     next/image emits data: placeholders; canvas work can produce blob: URLs.
  *
+ *   frame-src https://www.openstreetmap.org
+ *     The contact section embeds an OpenStreetMap map. A frame with no
+ *     frame-src of its own falls back to default-src, so 'self' refused the
+ *     embed outright and the map rendered as a blank plate. This names that one
+ *     origin and nothing else: the tiles inside the map come from
+ *     tile.openstreetmap.org, but the framed document fetches those under ITS
+ *     policy, never ours, so no img-src or connect-src allowance follows.
+ *
+ *     This is unrelated to frame-ancestors and X-Frame-Options below, which
+ *     govern who may frame US and stay at DENY.
+ *
  * JSON-LD needs no allowance: a type="application/ld+json" block is a data
  * island, not executable script.
  */
@@ -48,6 +60,7 @@ const csp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
+  "frame-src https://www.openstreetmap.org",
   "font-src 'self'",
   "connect-src 'self'",
   "form-action 'self'",

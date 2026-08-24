@@ -37,6 +37,12 @@ import { useFinePointer } from "@/hooks/use-media-query";
  *          change) so a reader who just picked a review keeps the full 6
  *          seconds, and cleared on unmount, on hover with a fine pointer, on
  *          focus inside the carousel, and while the document is hidden.
+ *   pager  one centred row under the card: previous button, the six dots, next
+ *          button. All three routes call the same show(), so the arrows restart
+ *          the clock exactly like a dot and wrap in both directions (previous
+ *          from the first lands on the last). The arrows are the one place on
+ *          the site allowed to draw an arrow glyph, granted by the client for
+ *          this carousel; they are colour only on hover, never scale.
  *   enter  gsap.from the carousel wrapper: y 40, opacity 0, once at "top 80%".
  *          The wrapper carries the entrance and the card inside carries the
  *          swap, so the two never write the same transform.
@@ -62,22 +68,39 @@ const SOURCE_LINE = "Posted on Booksy";
 const CAROUSEL_LABEL = "Client reviews";
 
 /*
- * Trace routing, artboard units, re-measured in the browser at 1440 and 390 for
- * the single card layout: the section is now 808 tall on desktop (was 1045) and
- * 739 on mobile (was 627). Desktop still resumes at x 650 after the gallery
- * gap, runs down behind the card (which sits at x 500 to 1400, so the cord is
- * occluded from y 350 to 686 and shows above and below it), then elbows right
- * to x 1800 and drops into the FAQ, which picks the cord up at that same x. The
- * elbow moved from y 975 to y 738, the clear band between the dots (they end at
- * 721) and the section end. Mobile keeps the single straight run at x 24,
- * behind the card. Both paths overshoot the artboard, which the svg clips, so
- * the cord always reaches the seam.
+ * Pager buttons. Round like the site's other floating controls, borderless
+ * (only cards carry an outline), bg-panel at rest so they read as a control and
+ * not as a second card. Hover is gated to fine pointers: the capsule floods
+ * accent and the glyph flips to bone over 0.4s ease-osmo, no scale and no
+ * bounce. :active mirrors it so a thumb gets the same confirmation on a screen
+ * that cannot hover.
  */
-const TRACE_HEIGHT = 808;
-const TRACE_HEIGHT_MOBILE = 739;
+const PAGER_BUTTON = [
+  "grid size-48 shrink-0 place-items-center rounded-full bg-panel",
+  "transition-colors duration-400 ease-osmo",
+  "active:bg-accent active:text-bone",
+  "pointer-fine:hover:bg-accent pointer-fine:hover:text-bone",
+  "max-md:size-44",
+].join(" ");
+
+/*
+ * Trace routing, artboard units, re-measured in the browser at 1440 (root font
+ * 12px, so one artboard px is 0.75 css px) after the pager row landed. The
+ * section measures 863.58, rounded to 864: it was 847.58 before the arrows,
+ * which the old 808 here never caught up with after the card's min-h went from
+ * 336 to 376. The run resumes at x 650 after the gallery gap and drops past the
+ * card, which sits at x 510 to 1410 and y 350 to 726 and occludes the cord over
+ * that stretch; the cord shows above it, then again in the gutter beside the
+ * pager row (that row is 729 to 777 but its buttons and dots only span x 792 to
+ * 1128, so the cord clears them), then elbows right at y 792 into a horizontal
+ * run at y 820, the middle of the clear band between the pager and the section
+ * end, and drops at x 1800 into the FAQ, which picks the cord up at that same x.
+ * The cord is desktop only, so there is no mobile path. The run overshoots the
+ * artboard by 95, which the svg clips, so it always reaches the seam.
+ */
+const TRACE_HEIGHT = 864;
 const TRACE_D =
-  "M 650 -40 V 738 Q 650 766 678 766 H 1772 Q 1800 766 1800 794 V 903";
-const TRACE_D_MOBILE = "M 24 -40 V 779";
+  "M 650 -40 V 792 Q 650 820 678 820 H 1772 Q 1800 820 1800 848 V 959";
 
 /* Autoplay period, in ms. */
 const AUTOPLAY_MS = 6000;
@@ -276,9 +299,7 @@ export function Testimonials() {
     >
       <TraceSegment
         d={TRACE_D}
-        dMobile={TRACE_D_MOBILE}
         height={TRACE_HEIGHT}
-        heightMobile={TRACE_HEIGHT_MOBILE}
         anchor="top"
       />
 
@@ -324,7 +345,7 @@ export function Testimonials() {
               <span className="text-p1 font-medium max-md:text-mp1">
                 {review.author}
               </span>
-              <span className="themed-muted ml-auto font-mono text-[12px]">
+              <span className="themed-muted ml-auto text-p2 max-md:text-mp2">
                 {review.date}
               </span>
             </div>
@@ -335,31 +356,55 @@ export function Testimonials() {
               {review.text}
             </p>
 
-            <p className="themed-muted mt-32 font-mono text-[11px] max-md:mt-24">
+            <p className="themed-muted mt-32 text-p2 tracking-[0.08em] uppercase max-md:mt-24 max-md:text-mp2">
               {SOURCE_LINE}
             </p>
           </article>
 
-          <div className="mt-24 flex justify-center max-md:mt-16">
-            {reviews.map((item, position) => {
-              const active = position === index;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => show(position)}
-                  aria-label={`Show review ${position + 1} of ${COUNT}`}
-                  aria-current={active ? "true" : undefined}
-                  className="grid size-32 place-items-center max-md:size-40"
-                >
-                  <span
-                    className={`size-10 rounded-full border border-line-strong transition-colors duration-300 ease-osmo ${
-                      active ? "border-accent bg-accent" : ""
-                    }`}
-                  />
-                </button>
-              );
-            })}
+          {/* Pager. Centred with a wide gap on desktop; on mobile the row
+              spans the card and the two arrows sit flush with its edges, which
+              is the only way 344 artboard px of controls read as deliberate
+              inside a 350 wide column. */}
+          <div className="mt-24 flex items-center justify-center gap-24 max-md:mt-16 max-md:justify-between max-md:gap-8">
+            <button
+              type="button"
+              onClick={() => show(index - 1)}
+              aria-label="Previous review"
+              className={PAGER_BUTTON}
+            >
+              <Chevron back />
+            </button>
+
+            <div className="flex">
+              {reviews.map((item, position) => {
+                const active = position === index;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => show(position)}
+                    aria-label={`Show review ${position + 1} of ${COUNT}`}
+                    aria-current={active ? "true" : undefined}
+                    className="grid size-32 place-items-center max-md:size-40"
+                  >
+                    <span
+                      className={`size-10 rounded-full border border-line-strong transition-colors duration-300 ease-osmo ${
+                        active ? "border-accent bg-accent" : ""
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => show(index + 1)}
+              aria-label="Next review"
+              className={PAGER_BUTTON}
+            >
+              <Chevron />
+            </button>
           </div>
 
           <p className="sr-only" aria-live="polite">
@@ -368,5 +413,27 @@ export function Testimonials() {
         </div>
       </div>
     </section>
+  );
+}
+
+/*
+ * Pager chevron, 16 artboard px, drawn inline: one stroked polyline in
+ * currentColor, so it inherits the flip to bone when the button floods accent.
+ * No icon library and no fill.
+ */
+function Chevron({ back = false }: { back?: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="size-16 flex-none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={back ? "M10 3 5 8 10 13" : "M6 3 11 8 6 13"} />
+    </svg>
   );
 }

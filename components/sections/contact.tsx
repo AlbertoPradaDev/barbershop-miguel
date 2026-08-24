@@ -4,21 +4,28 @@ import { useRef } from "react";
 import { gsap, useGSAP, EXIT } from "@/lib/gsap";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { PillButton } from "@/components/ui/pill-button";
-import { Magnetic } from "@/components/ui/magnetic";
 import { TraceSegment } from "@/components/ui/trace-line";
 import { SITE } from "@/lib/content/site";
 
 /*
- * Contact: the ways to reach the shop on the left (tappable phone and email,
- * opening hours), a booking panel on the right, and a real interactive
- * OpenStreetMap embed as the centrepiece underneath. The written address is
+ * Contact: a half and half band. One half stacks everything there is to read
+ * (the heading, the tappable phone and email, the opening hours and the
+ * booking card), the other is a real interactive OpenStreetMap embed stretched
+ * to the full height of its column, so the two halves weigh the same and the
+ * map reads as a tall plate rather than a letterbox. The written address is
  * gone: the map is the address now, with a directions link under it so a touch
- * visitor is never stuck inside the iframe.
+ * visitor is never stuck inside the iframe. On phones the halves fall into one
+ * column and the map follows the text.
+ *
+ * Typography: the site is set in one family. The hours and the booking note
+ * used to be mono, which is exactly the typewriter look the client banned;
+ * their functional register is carried now by size, medium weight, a little
+ * tracking and themed-muted, with tabular numerals holding the times in line.
  *
  * Motion recipe (transform + opacity, plus one clip-path on the map):
- *   left     gsap.from y 40, opacity 0, 0.9s expo.out, trigger "top 78%" once,
+ *   text     gsap.from y 40, opacity 0, 0.9s expo.out, trigger "top 78%" once,
  *            with the hours rows staggering 0.06 inside the same timeline.
- *   right    the same from, delayed 0.15s off its own "top 78%" trigger.
+ *   card     the same from, delayed 0.15s off its own "top 78%" trigger.
  *   map      one timeline at "top 85%": the block rises 40 while the figure
  *            wipes open on clip-path inset(8% round 1.5rem) -> inset(0% round
  *            1.5rem) over 1s expo.out (the radius rides along so the corners
@@ -33,7 +40,7 @@ import { SITE } from "@/lib/content/site";
  * bbox centre, which is where that overlay sat, so it read as two markers on
  * one spot rather than as an accent.
  *
- * Surface: the booking panel is a card (20px radius) with a 2px outline; the
+ * Surface: the booking panel is a card (20px radius) with a 2px outline, the
  * map is a media plate (24px) with none, because images carry no border. No
  * shadow anywhere. The hours are a list, not a card, so their separators stay
  * 1px hairlines, and the only fill left in the section is the bg-panel hover
@@ -53,7 +60,9 @@ const TEL_HREF = SITE.phone ? `tel:${SITE.phone.replace(/[^\d+]/g, "")}` : null;
 /*
  * OSM's embed wants bbox as min lng, min lat, max lng, max lat. A 0.012 x 0.006
  * degree window is about a four block view around the shop, which is the scale
- * where street names are readable at the 21/9 plate size.
+ * where street names stay readable. OSM fits that window to whatever aspect the
+ * plate has, so the taller half column simply shows more sky and more ground
+ * around the same four blocks.
  */
 const { lat, lng } = SITE.geo;
 const BBOX = [lng - 0.006, lat - 0.003, lng + 0.006, lat + 0.003]
@@ -94,25 +103,38 @@ const ROW_LINE = [
 const MAP_FIGURE = [
   /* trace-occlude paints an opaque page-bg plate so the cord passes behind. */
   "trace-occlude relative overflow-hidden rounded-media",
-  "aspect-[21/9] max-md:aspect-[4/3]",
+  /*
+   * Desktop: no aspect ratio at all. The plate is a flex child that takes every
+   * pixel the directions link leaves in its half, so its height is set by the
+   * text half opposite and the two columns end level. min-h keeps it a plate
+   * rather than a slot on the short viewports where the text half collapses.
+   */
+  "flex-1 min-h-560",
+  /* Phones stack, so there is no column to match: back to a picture shape. */
+  "max-md:flex-none max-md:min-h-0 max-md:aspect-[4/3]",
   /* Media plate: 24px radius and nothing else. Images carry no outline, so the
      tiles meet the page directly. The GSAP wipe tweens clip-path at the
      matching 1.5rem, so nothing squares off mid tween. */
 ].join(" ");
 
 /*
- * OSM's raster tiles are a light map, and Contact is a white band, so the frame
- * only needs the edge taken off the tile colour to sit with the page. The dark
- * inversion the old toggle needed is gone with it: a band never changes scheme
- * at runtime, so one grade is correct for the whole life of the page.
+ * Black and white, not half desaturated. OSM's raster tiles ship their own
+ * green, beige and blue palette, and the old saturate(0.35) left enough of it
+ * to read as a washed out colour map next to a page whose only colour is the
+ * accent. grayscale(1) takes the hue out completely and the contrast lift puts
+ * back the separation that the colour was doing: road casings, water and park
+ * fill all land on the same grey ramp otherwise, and the street names sit on
+ * top of it.
  *
- * scheme-dark: is kept as a safety net in case this section is ever moved into
- * a black band, where raw white tiles would blow a hole in the page.
+ * scheme-dark: still inverts, because a white map is a hole in a black band.
+ * Inverting a monochrome image cannot shift hue, so the old hue-rotate and
+ * saturate pair is gone; the contrast comes back down a little because
+ * inversion already hardens the tile ink.
  */
 const MAP_FRAME = [
   "absolute inset-0 h-full w-full border-0",
-  "[filter:saturate(0.35)_contrast(1.05)]",
-  "scheme-dark:[filter:invert(0.92)_hue-rotate(180deg)_saturate(0.5)_contrast(0.95)]",
+  "[filter:grayscale(1)_contrast(1.12)]",
+  "scheme-dark:[filter:grayscale(1)_invert(0.92)_contrast(0.92)]",
 ].join(" ");
 
 export function Contact() {
@@ -192,131 +214,166 @@ export function Contact() {
   return (
     <section id="contact" ref={section} className="relative">
       {/*
-        Re-measured after the address came out. The columns end at 549 on the
-        1920 artboard and the map plate starts at 639, so the run drops behind
-        the booking panel, turns in the 90px gap below the grid and parks the
-        plug at 576, dead centre of the column gutter and clear of the map. On
-        the 390 artboard the hours end at 417 and the panel starts at 464, so
-        the plug sits at 440, in that gap rather than under the now opaque
-        panel. Previous values: 640/668/732 and 560/600.
+        Re-measured in the browser at 1440 after the half and half split, in
+        artboard px off the top of the section: the band is now 983 tall (it was
+        about 1500 while the map was a full width letterbox), the map plate runs
+        992..1856 across and 140..789 down, and the directions link under it ends
+        at 843. So the run comes down the right at 1800 as it did before, passes
+        behind the plate (trace-occlude), re-emerges in the 73px below it, turns
+        on the same 28px corner at 862 and sweeps left at 890, clear of the link
+        and of the booking card, to park the plug at 960: dead centre of the
+        column gutter, 93 above the foot of the band. The cord is desktop only,
+        so this segment carries no mobile path and no mobile plug.
+        Previous values: height 640, V 548, turn 576, plug 960/576.
       */}
       <TraceSegment
-        d="M 1800 -40 V 548 Q 1800 576 1772 576 H 960"
-        dMobile="M 24 -40 V 440"
-        height={640}
-        heightMobile={480}
+        d="M 1800 -40 V 862 Q 1800 890 1772 890 H 960"
+        height={980}
         anchor="top"
         plug
-        plugAt={{ x: 960, y: 576 }}
-        plugAtMobile={{ x: 24, y: 440 }}
+        plugAt={{ x: 960, y: 890 }}
       />
 
       <div
         ref={inner}
         className="relative z-10 px-64 py-140 max-md:px-20 max-md:py-90"
       >
-        <div className="grid grid-cols-2 gap-64 max-md:grid-cols-1 max-md:gap-48">
-          <div ref={left}>
-            <SectionHeading>Visit us</SectionHeading>
+        {/*
+          Half and half: everything you read in one column, the map plate in
+          the other. Both halves are grid items, so they are the same height by
+          default and the map simply takes whatever the text half sets. Phones
+          drop to one column and the map lands after the text.
+        */}
+        <div className="grid grid-cols-2 gap-64 max-md:grid-cols-1 max-md:gap-56">
+          {/*
+            The reading half. A flex column rather than a stack of margins, so
+            the booking card can push itself to the bottom edge with mt-auto
+            whenever the map half is the taller of the two and the row stretches
+            this one to match. Both entrance triggers keep their own element:
+            `left` for the heading and hours, `right` for the card.
+          */}
+          <div className="flex flex-col gap-48 max-md:gap-32">
+            <div ref={left}>
+              <SectionHeading>Visit us</SectionHeading>
 
-            {/*
-              Renders nothing at all while both are null, rather than an empty
-              gap: the address and hours below carry the section on their own,
-              and a heading over blank space reads as a broken page.
-            */}
-            {(TEL_HREF || SITE.email) && (
-              <div className="mt-40 max-md:mt-28 flex flex-col items-start gap-12">
-                {TEL_HREF && (
-                  <a href={TEL_HREF} className={LINK}>
-                    {SITE.phone}
-                  </a>
-                )}
-                {SITE.email && (
-                  <a href={`mailto:${SITE.email}`} className={LINK}>
-                    {SITE.email}
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/*
-              ONE div between the <dl> and its <dt>/<dd>, never two. HTML allows
-              exactly one wrapper there, and this had a styling div inside the
-              row div: that second level broke the association, so a screen
-              reader announced ten loose fragments instead of five day-and-time
-              pairs. Opening hours are the single most likely reason someone is
-              using assistive tech on this page at all.
-
-              The two wrappers are merged rather than one being deleted: the row
-              needs `group relative` for the hover field and the flex line needs
-              its own layout, so both sets of classes live on the one permitted
-              div and the hover field is positioned against it directly.
-            */}
-            <dl className="trace-occlude mt-48 max-md:mt-32 font-mono text-p2 max-md:text-mp2">
-              {SITE.hours.map((row) => (
-                <div
-                  key={row.days}
-                  data-hours-row
-                  className={`group border-b border-line themed-border ${ROW_LINE}`}
-                >
-                  <span aria-hidden className={ROW_FIELD} />
-                  <dt className="themed-muted">{row.days}</dt>
-                  <dd>{row.closed ? "Closed" : `${row.open} to ${row.close}`}</dd>
+              {/*
+                Renders nothing at all while both are null, rather than an empty
+                gap: the address and hours below carry the section on their own,
+                and a heading over blank space reads as a broken page.
+              */}
+              {(TEL_HREF || SITE.email) && (
+                <div className="mt-40 max-md:mt-28 flex flex-col items-start gap-12">
+                  {TEL_HREF && (
+                    <a href={TEL_HREF} className={LINK}>
+                      {SITE.phone}
+                    </a>
+                  )}
+                  {SITE.email && (
+                    <a href={`mailto:${SITE.email}`} className={LINK}>
+                      {SITE.email}
+                    </a>
+                  )}
                 </div>
-              ))}
-            </dl>
+              )}
+
+              {/*
+                ONE div between the <dl> and its <dt>/<dd>, never two. HTML
+                allows exactly one wrapper there, and this had a styling div
+                inside the row div: that second level broke the association, so
+                a screen reader announced ten loose fragments instead of five
+                day-and-time pairs. Opening hours are the single most likely
+                reason someone is using assistive tech on this page at all.
+
+                The two wrappers are merged rather than one being deleted: the
+                row needs `group relative` for the hover field and the flex line
+                needs its own layout, so both sets of classes live on the one
+                permitted div and the hover field is positioned against it
+                directly.
+
+                Set in the page's own family, like everything else. What marks
+                the list as functional is the smaller size, the medium weight
+                and the open tracking, not a second typeface; the day labels
+                take themed-muted so the times read first.
+              */}
+              <dl className="trace-occlude mt-48 max-md:mt-32 text-p2 max-md:text-mp2 font-medium tracking-[0.02em]">
+                {SITE.hours.map((row) => (
+                  <div
+                    key={row.days}
+                    data-hours-row
+                    className={`group border-b border-line themed-border ${ROW_LINE}`}
+                  >
+                    <span aria-hidden className={ROW_FIELD} />
+                    <dt className="themed-muted">{row.days}</dt>
+                    {/* Tabular figures: without them 1pm and 10:30am set to
+                        different widths and the right edge of the column
+                        wanders row to row. */}
+                    <dd className="[font-variant-numeric:tabular-nums]">
+                      {row.closed ? "Closed" : `${row.open} to ${row.close}`}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/*
+              An outlined card now, not a tint, so plate and surface are the
+              same node: .trace-occlude is the opaque page-bg the cord passes
+              behind and the 2px outline carries the depth. The tint used to
+              need a second element underneath purely because .trace-occlude is
+              unlayered CSS and would have flattened a bg-panel sitting on the
+              same node.
+            */}
+            <div
+              ref={right}
+              className={`mt-auto trace-occlude rounded-card ${OUTLINE} p-48 max-md:p-24`}
+            >
+              <p className="text-p1 max-md:text-mp1 max-w-460">{BOOKING_LINE}</p>
+
+              <div className="mt-32 max-md:mt-24 w-fit">
+                <PillButton variant="solid" href={SITE.bookingUrl}>
+                  Book now
+                </PillButton>
+              </div>
+
+              {/* The same functional register as the hours, one step down:
+                  size, weight, tracking and themed-muted, no second family.
+                  14 artboard px against the list's 16, in rem like everything
+                  else, so it scales with the artboard instead of sitting at a
+                  fixed device size the way the old mono note did. */}
+              <p className="mt-16 text-[0.875rem] max-md:text-[0.8125rem] font-medium tracking-[0.03em] themed-muted">
+                {BOOKING_NOTE}
+              </p>
+            </div>
           </div>
 
-          {/*
-            An outlined card now, not a tint, so plate and surface are the same
-            node: .trace-occlude is the opaque page-bg the cord passes behind
-            and the 2px outline carries the depth. The tint used to need a
-            second element underneath purely because .trace-occlude is unlayered
-            CSS and would have flattened a bg-panel sitting on the same node.
-          */}
-          <div
-            ref={right}
-            className={`self-start trace-occlude rounded-card ${OUTLINE} p-48 max-md:p-24`}
-          >
-            <p className="text-p1 max-md:text-mp1 max-w-460">{BOOKING_LINE}</p>
+          {/* The map half. A flex column so the plate can take every pixel the
+              directions link leaves, which is what makes it a tall plate. */}
+          <div ref={mapBlock} className="flex flex-col">
+            {/*
+              data-lenis-prevent hands the wheel to the map instead of the page,
+              and overscroll-behavior: contain (globals.css) stops the scroll
+              chaining back out mid gesture.
+            */}
+            <figure ref={map} data-lenis-prevent className={MAP_FIGURE}>
+              <iframe
+                title={MAP_TITLE}
+                src={MAP_SRC}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className={MAP_FRAME}
+              />
+            </figure>
 
-            <Magnetic className="mt-32 max-md:mt-24 w-fit">
-              <PillButton variant="solid" href={SITE.bookingUrl}>
-                Book now
-              </PillButton>
-            </Magnetic>
-
-            <p className="mt-16 font-mono text-[12px] themed-muted">
-              {BOOKING_NOTE}
-            </p>
+            <a
+              data-map-link
+              href={DIRECTIONS_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${LINK} block mt-24 max-md:mt-18`}
+            >
+              {DIRECTIONS_LABEL}
+            </a>
           </div>
-        </div>
-
-        <div ref={mapBlock} className="mt-90 max-md:mt-56">
-          {/*
-            data-lenis-prevent hands the wheel to the map instead of the page,
-            and overscroll-behavior: contain (globals.css) stops the scroll
-            chaining back out mid gesture.
-          */}
-          <figure ref={map} data-lenis-prevent className={MAP_FIGURE}>
-            <iframe
-              title={MAP_TITLE}
-              src={MAP_SRC}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className={MAP_FRAME}
-            />
-          </figure>
-
-          <a
-            data-map-link
-            href={DIRECTIONS_HREF}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${LINK} block mt-24 max-md:mt-18`}
-          >
-            {DIRECTIONS_LABEL}
-          </a>
         </div>
       </div>
     </section>

@@ -223,9 +223,7 @@ export function About() {
       <TraceSegment
         anchor="top"
         height={1753}
-        heightMobile={1243}
         d="M 120 -40 V 1372 Q 120 1400 148 1400 H 1432 Q 1460 1400 1460 1428 V 1793"
-        dMobile="M 24 -40 V 1283"
       />
 
       <div

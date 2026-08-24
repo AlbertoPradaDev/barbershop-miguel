@@ -20,7 +20,8 @@ Premium barbershop marketing site, US client. Mobile-first, dark/light theme wit
 4. No meaningless metrics or stat counters.
 5. No small uppercase eyebrow/kicker text above section headings.
 6. Hero title: no italics, no styled spans inside it.
-7. No arrows inside buttons.
+7. No arrows inside buttons. ONE exception, granted by the client: the review carousel's previous/next controls are arrow buttons. Nowhere else.
+8. No monospace anywhere. The typewriter look is banned: the site is set in one family (Instrument Sans). There is no `font-mono` utility and no mono font loaded.
 
 ## Conventions (mirror of C:\Users\alber\Documents\Workspace\portfolio)
 

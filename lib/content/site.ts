@@ -62,6 +62,14 @@ export interface Site {
   navLinks: NavLink[];
 }
 
+/*
+ * The WhatsApp deep link is held in its own const because it is read twice: as
+ * SITE.whatsapp for the floating button, and again inside SITE.socials, and an
+ * object literal cannot refer to itself. While it is null WhatsApp is simply
+ * absent from the socials list instead of shipping a dead wa.me href.
+ */
+const WHATSAPP: string | null = null;
+
 export const SITE: Site = {
   name: "MR Society Barber Studio",
 
@@ -88,7 +96,7 @@ export const SITE: Site = {
    * telephone all come back on their own, with no other edit anywhere.
    */
   phone: null,
-  whatsapp: null,
+  whatsapp: WHATSAPP,
   email: null,
 
   address: {
@@ -115,7 +123,19 @@ export const SITE: Site = {
     { days: "Mon and Tue", open: "", close: "", closed: true },
   ],
 
-  socials: [{ label: "Instagram", href: "https://www.instagram.com/mrangel13._/" }],
+  /*
+   * Instagram is the only profile the client has given us. WhatsApp is a real
+   * channel we already hold, so it joins the list the moment WHATSAPP above is
+   * filled in and stays out while there is no number to link to.
+   *
+   * To add more: push another { label, href } here and the footer, the mobile
+   * menu and the JSON-LD sameAs pick it up with no further edit. Only handles
+   * the client has actually confirmed. No invented Facebook, TikTok or X.
+   */
+  socials: [
+    { label: "Instagram", href: "https://www.instagram.com/mrangel13._/" },
+    ...(WHATSAPP ? [{ label: "WhatsApp", href: WHATSAPP }] : []),
+  ],
 
   navLinks: [
     { label: "Services", href: "#services" },

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 import { OpeningSequence } from "@/components/layout/opening-sequence";
 import { JsonLd, barberShopJsonLd, SITE_URL, SHARE_IMAGE } from "@/lib/seo";
@@ -10,13 +10,6 @@ import "./globals.css";
 const instrument = Instrument_Sans({
   variable: "--font-body",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: "400",
   display: "swap",
 });
 
@@ -79,7 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${instrument.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${instrument.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-page-bg text-page-text">
         {/* Runs before first paint: hides [data-masked] text until the reveal

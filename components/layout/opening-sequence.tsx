@@ -454,7 +454,7 @@ export function OpeningSequence() {
             type="button"
             data-seq-skip
             aria-hidden={false}
-            className="fixed right-32 bottom-32 z-[83] cursor-pointer rounded-full border border-bone/30 bg-transparent px-24 py-12 font-mono text-mp2 tracking-[0.12em] text-bone/70 uppercase transition-colors duration-300 hover:border-bone/60 hover:text-bone focus-visible:border-bone focus-visible:text-bone max-md:right-20 max-md:bottom-20 max-md:px-20 max-md:py-10"
+            className="fixed right-32 bottom-32 z-[83] cursor-pointer rounded-full border border-bone/30 bg-transparent px-24 py-12 text-mp2 font-medium tracking-[0.08em] text-bone/70 uppercase transition-colors duration-300 hover:border-bone/60 hover:text-bone focus-visible:border-bone focus-visible:text-bone max-md:right-20 max-md:bottom-20 max-md:px-20 max-md:py-10"
           >
             Skip
           </button>

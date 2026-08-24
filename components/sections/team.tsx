@@ -148,8 +148,8 @@ export function Team() {
     >
       {/*
         Re-measured in the browser after the grid became one feature block: the
-        section is 1475 artboard units tall at 1440 (1106 CSS px) and 1280 at
-        390, where the old four-up grid only ever carried a 300 unit stub. The
+        section is 1475 artboard units tall at 1440 (1106 CSS px). The cord is
+        desktop only now, so this segment carries no mobile path at all. The
         cord comes in at x 1460 from About, which ends 40 past its own artboard,
         and runs the full drop, stopping 40 short of the bottom because Gallery
         carries no segment and the run has to finish inside the white band.
@@ -157,9 +157,7 @@ export function Team() {
       <TraceSegment
         anchor="top"
         height={1475}
-        heightMobile={1280}
         d="M 1460 -40 V 1435"
-        dMobile="M 24 -40 V 1240"
       />
 
       <div ref={inner} className="relative z-10">

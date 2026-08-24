@@ -58,7 +58,6 @@ const INTRO =
 
 /* The trace enters top right, elbows to the left rail and hands x 120 to About. */
 const TRACE_D = "M 1180 -40 V 210 Q 1180 238 1152 238 H 148 Q 120 238 120 266 V 1150";
-const TRACE_D_MOBILE = "M 24 -40 V 1930";
 
 /*
  * The card surface: opaque plate (so it occludes the cord), 2px outline, no
@@ -139,9 +138,7 @@ export function Services() {
     >
       <TraceSegment
         d={TRACE_D}
-        dMobile={TRACE_D_MOBILE}
         height={1110}
-        heightMobile={1890}
         anchor="top"
       />
 

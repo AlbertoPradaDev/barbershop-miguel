@@ -101,9 +101,8 @@ html {
   --color-accent: var(--page-accent);
   --color-star: var(--page-star);
 
-  /* Font wiring lives in layout.tsx; falls back to the scaffold's Geist var. */
+  /* One family for the whole site: there is no monospace face. */
   --font-sans: var(--font-body, var(--font-geist-sans));
-  --font-mono: var(--font-plex-mono, ui-monospace, monospace);
 }
 
 @theme {

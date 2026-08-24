@@ -41,7 +41,6 @@ const HEADING = "Questions";
 /* Right rail: straight down x 1800, overshooting both artboard edges so the
  * neighbouring segments join without a seam. Contact picks it up at 1800. */
 const TRACE_D = "M 1800 -40 V 869";
-const TRACE_D_MOBILE = "M 24 -40 V 743";
 
 const ITEM = "[data-faq-item]";
 
@@ -124,9 +123,7 @@ export function Faq() {
     >
       <TraceSegment
         d={TRACE_D}
-        dMobile={TRACE_D_MOBILE}
         height={829}
-        heightMobile={703}
         anchor="top"
       />
 
