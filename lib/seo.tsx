@@ -16,9 +16,11 @@ export const SITE_URL = "https://example.com";
  * content module with markup concerns.
  */
 const SCHEMA_DAYS: Record<string, string[]> = {
-  "Tue to Fri": ["Tuesday", "Wednesday", "Thursday", "Friday"],
+  "Wed and Thu": ["Wednesday", "Thursday"],
+  Fri: ["Friday"],
   Sat: ["Saturday"],
-  "Sun and Mon": ["Sunday", "Monday"],
+  Sun: ["Sunday"],
+  "Mon and Tue": ["Monday", "Tuesday"],
 };
 
 /* "9am" and "5:30pm" become the "09:00" / "17:30" schema.org wants. */

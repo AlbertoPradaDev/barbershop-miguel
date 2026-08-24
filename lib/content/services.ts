@@ -2,6 +2,12 @@
  * Service menu. Read by the services section and by any price list in the
  * footer. Prices and durations are display strings so the layout never has to
  * format numbers at render time.
+ *
+ * Names, prices and durations are the client's real Booksy menu, read
+ * 2026-08-24. Booksy carries no per service description, so the blurbs are
+ * written here: they describe only what the service name already says and make
+ * no claim about products, technique or guarantees that the client has not
+ * made himself.
  */
 
 export interface Service {
@@ -14,51 +20,43 @@ export interface Service {
 
 export const services: Service[] = [
   {
-    id: "classic-cut",
-    name: "Classic Cut",
+    id: "regular-cut",
+    name: "Regular Cut",
     blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.",
+      "The haircut on its own, taken at a pace that leaves room to get the shape right and to finish clean.",
     price: "$45",
     duration: "45 min",
   },
   {
-    id: "skin-fade",
-    name: "Skin Fade",
+    id: "full-cut",
+    name: "Full Cut",
     blurb:
-      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.",
+      "The haircut with the beard worked in, or with a shave. One appointment, everything squared away.",
     price: "$50",
     duration: "50 min",
   },
   {
-    id: "beard-trim",
-    name: "Beard Trim",
+    id: "head-shave-beard",
+    name: "Head Shave and Beard Trim",
     blurb:
-      "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-    price: "$30",
-    duration: "30 min",
-  },
-  {
-    id: "hot-towel-shave",
-    name: "Hot Towel Shave",
-    blurb:
-      "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est.",
-    price: "$55",
-    duration: "45 min",
-  },
-  {
-    id: "cut-and-beard",
-    name: "Cut and Beard",
-    blurb:
-      "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium totam.",
-    price: "$70",
-    duration: "75 min",
+      "A clean head shave with the beard shaped and tidied to match it.",
+    price: "$40",
+    duration: "40 min",
   },
   {
     id: "kids-cut",
     name: "Kids Cut",
     blurb:
-      "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni.",
-    price: "$32",
+      "For ages 2 to 15, unhurried and relaxed, so a young client leaves happy with it.",
+    price: "$40",
+    duration: "40 min",
+  },
+  {
+    id: "line-up",
+    name: "Line Up or Beard Maintenance",
+    blurb:
+      "The quick one between cuts: edges put back where they belong, or the beard brought back into line.",
+    price: "$25",
     duration: "30 min",
   },
 ];

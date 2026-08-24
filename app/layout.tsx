@@ -18,10 +18,13 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+/* The city is the shop's real one. AGENTS.md reserves this file for the
+   orchestrator, but it carried "Austin TX" from the placeholder set and the
+   studio is in Raleigh, NC, so it could not be left as it was. */
 export const metadata: Metadata = {
-  title: `${SITE.name}, Austin TX`,
+  title: `${SITE.name}, Raleigh NC`,
   description:
-    "Precision cuts, hot towel shaves and beard work in Austin, Texas. Book your chair.",
+    "Precision cuts, beard work and head shaves with Miguel Rangel in Raleigh, North Carolina. Book your chair.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -53,10 +53,12 @@ import { useFinePointer } from "@/hooks/use-media-query";
  */
 
 const INTRO =
-  "Lorem ipsum dolor sit amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.";
+  "Rated 5.0 from 123 reviews on Booksy. A few of them, in the words they were written in.";
 
-/* Functional microcopy: real English. */
-const SOURCE_LINE = "Posted on Google";
+/* Functional microcopy: real English. The reviews are real, so the source line
+   has to name where they were actually posted. It said Google, which would be a
+   false claim about their provenance; every one of them is from Booksy. */
+const SOURCE_LINE = "Posted on Booksy";
 const CAROUSEL_LABEL = "Client reviews";
 
 /*
@@ -303,10 +305,14 @@ export function Testimonials() {
             onPointerCancel={onPointerCancel}
             onMouseEnter={finePointer ? () => setHovered(true) : undefined}
             onMouseLeave={finePointer ? () => setHovered(false) : undefined}
-            /* min-h holds the card at the tallest of the six (334 artboard px
-               desktop, 329 mobile), so an advance never nudges the dots or the
-               trace elbow half a line up the page. */
-            className="trace-occlude mx-auto min-h-336 max-w-900 touch-pan-y rounded-card border-2 border-line-strong bg-page-bg p-48 max-md:w-full max-md:p-28"
+            /* min-h holds the card at the tallest of the six, so an advance
+               never nudges the dots or the trace elbow half a line up the page.
+               Re-measured against the REAL reviews, which run longer than the
+               placeholder set this was first tuned to: the longest (Zach) needs
+               364 artboard px on desktop and 354 on mobile, where 336 gave it
+               only 252px and 336px and the dots jumped 21px on that one slide.
+               376 is the next step of 8 that clears both with headroom. */
+            className="trace-occlude mx-auto min-h-376 max-w-900 touch-pan-y rounded-card border-2 border-line-strong bg-page-bg p-48 max-md:w-full max-md:p-28"
           >
             <div className="flex items-center gap-16">
               <span
@@ -319,7 +325,7 @@ export function Testimonials() {
                 {review.author}
               </span>
               <span className="themed-muted ml-auto font-mono text-[12px]">
-                {review.timeAgo}
+                {review.date}
               </span>
             </div>
 

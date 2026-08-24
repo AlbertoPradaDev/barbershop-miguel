@@ -35,8 +35,9 @@ import { SITE } from "@/lib/content/site";
  * resting state, the curtain never leaves 0 and the ribbon simply sits still.
  */
 
-const HEADLINE = ["Lorem ipsum", "dolor sit amet"] as const;
-const DESCRIPTOR = "Barbershop, Austin TX";
+/* Echoes the barber's own description of the work: precision, comfort, care. */
+const HEADLINE = ["Precision,", "every cut."] as const;
+const DESCRIPTOR = "Barbershop, Raleigh NC";
 const TEL = `tel:${SITE.phone.replace(/[^\d+]/g, "")}`;
 const MAILTO = `mailto:${SITE.email}`;
 

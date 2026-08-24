@@ -58,11 +58,12 @@ import { aboutPhotos } from "@/lib/content/photos";
  * and reads only in the gaps between blocks.
  */
 
+/* The barber's own line, lifted straight from his Booksy profile. */
 const PULL_QUOTE =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua nostrud.";
+  "Not just a cut, but a moment to feel your best.";
 
 const BODY =
-  "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
+  "One chair on Spring Forest Road, in Raleigh. Appointments are booked for the time the work actually takes, so nobody is rushed out of the seat and the finish gets the attention it needs. Some clients have been coming since high school, and plenty bring their kids. English or Spanish, whichever you are more comfortable in.";
 
 /* aboutPhotos is ordered upright, upright, wide, which is exactly the layout. */
 const [PORTRAIT_A, PORTRAIT_B, WIDE] = aboutPhotos;

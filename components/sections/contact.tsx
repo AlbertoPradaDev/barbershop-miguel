@@ -41,7 +41,7 @@ import { SITE } from "@/lib/content/site";
  */
 
 const BOOKING_LINE =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.";
+  "The calendar is open 24 hours a day on Booksy. Pick a slot and the chair is yours.";
 const BOOKING_NOTE = "Booking opens in a new tab";
 const MAP_TITLE = "Map of the shop location";
 const DIRECTIONS_LABEL = "Get directions";
