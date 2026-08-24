@@ -1,155 +1,57 @@
 "use client";
 
-import { useRef, type MouseEvent } from "react";
+import { useRef } from "react";
 import Image from "next/image";
-import { gsap, useGSAP, REVEAL } from "@/lib/gsap";
-import { MaskedText } from "@/components/ui/masked-text";
-import { PillButton } from "@/components/ui/pill-button";
-import { useLenis } from "@/components/providers/smooth-scroll-provider";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { SITE } from "@/lib/content/site";
-import { pexels } from "@/lib/content/photos";
+import { miguelAtWork } from "@/lib/content/photos";
 
 /*
- * Hero: an edge to edge two column split, no page gutter. The left 45% is the
- * black band itself, carrying four short display lines and the CTA row and
- * nothing else above or beside them; the right 55% is one full bleed
- * photograph running flush to the top, right and bottom of the viewport. On
- * phones the panel stacks over the photo. The section stays transparent and
- * token driven: it is the dark band in page.tsx that paints the panel black.
+ * Hero: a full bleed photograph of the barber at work with a single white plate
+ * centred on it carrying the shop name, and two lines of standing detail along
+ * the bottom edge.
  *
- * The panel keeps the site gutter (px-64) instead of a wider one on purpose:
- * the longest headline line, "Meets Tradition", measures 713 artboard px at
- * text-h0, and 45% of the 1920 artboard less that gutter leaves 736, so the
- * four authored lines hold without wrapping and without shrinking the type.
+ * Ported from the Awwwards card awwwards/hero/10. This section is the SECOND
+ * half of one animation whose first half lives in
+ * components/layout/opening-sequence.tsx, and the join is unusual enough to
+ * spell out: the sequence owns the timeline for BOTH halves and reaches in here
+ * to drive this section's clip-path and the plate. That is deliberate. The
+ * reveal is one continuous move (the lockup tears along the middle, the two
+ * halves part like doors, and this section opens through the gap between them),
+ * and splitting a single timeline across two components' effects would mean
+ * synchronising them frame by frame for no gain.
  *
- * Motion recipe:
- *   title   one MaskedText per line, mode "mount", delays stepped by
- *           REVEAL.stagger (0 / 0.07 / 0.14 / 0.21) on top of REVEAL.introDelay,
- *           so the four lines rise as one cascade. No x drift and no hover
- *           nudge: the reference block is static type.
- *   ctas    yPercent 100 -> 0 inside an overflow-hidden slot, duration 1,
- *           expo.out, delay 0.75. No fade. On complete the slot is handed back
- *           overflow: visible so a focus ring never clips. Neither button
- *           follows the pointer: no magnetic wrapper anywhere in the hero.
- *   photo   scale 1.06 -> 1 over 1.2s expo.out on mount, plus a scrubbed
- *           parallax on its frame (yPercent -2 -> 2) over the same range as the
- *           exit. The frame is 108% tall and inset 4% top and bottom, so the
- *           drift can never expose an edge, and the column clips it regardless.
- *   exit    one scrubbed ScrollTrigger ("top top" -> "bottom top") lifting the
- *           panel content y -120 to opacity 0.1 while the photo holds its own
- *           column.
- * The CTA row carries data-masked, so the head script's
- * `[data-masked]{visibility:hidden}` holds it until this effect hands it back:
- * no flash of the pre-animation state above the fold. Reduced motion restores
- * visibility, opens the slot and builds no tweens at all.
+ * So the hooks below are a contract with that file: [data-hero-container],
+ * [data-hero-card] and [data-hero-card-title]. This component handles only the
+ * case where the sequence never runs, by leaving everything at rest.
+ *
+ * NOTHING here is clipped in CSS. A clip written into the stylesheet would
+ * leave the hero invisible for anyone whose sequence is skipped (reduced
+ * motion, or already seen this session), so the sequence applies its own
+ * starting state in JS at the moment it takes ownership, and only then.
  */
 
-/* Client reference copy, verbatim, four lines. No italics, no styled spans. */
-const TITLE_LINES = [
-  "Where Style",
-  "Meets Tradition",
-  "One Cut at a",
-  "Time",
-] as const;
-
-/* Barber working a comb through the top while a low fade sits underneath: the
-   same framing as the reference photograph. LCP image, so it ships at 1600. */
-const PHOTO_SRC = pexels(2076930, 1600);
-const PHOTO_ALT = "Barber combing and cutting a client's hair at the chair";
-const PHOTO_SIZES = "(max-width: 767px) 100vw, 55vw";
-
-/* Mount: the frame settles out of a 6% push in. */
-const PHOTO_SCALE = 1.06;
-const PHOTO_DURATION = 1.2;
-
-/* Scrub: the photo lags the panel by 2% of its frame in each direction. */
-const PHOTO_DRIFT = 2;
-
-/* The panel content lifts and dims as the hero leaves; the photo does not. */
-const EXIT_OPACITY = 0.1;
-const EXIT_Y = -120;
+/*
+ * Left is where the shop is. Right is the barber's own three words, from his
+ * Booksy "About us": focused on "precision, comfort, and customer care". The
+ * card's own footer read "Scroll Down", which is a scroll indicator and banned
+ * outright by hard ban 3, and "Made by Codegrid", which is the tutorial's own
+ * credit and not ours to carry.
+ */
+const STANDING_LEFT = "Raleigh, North Carolina";
+const STANDING_RIGHT = "Precision, comfort, care";
 
 export function Hero() {
   const root = useRef<HTMLElement>(null);
-  const lenis = useLenis();
-
-  /*
-   * Delegated so the CTA row keeps real anchors (crawlable, keyboard native)
-   * while Lenis, not the browser's disabled native smooth scroll, does the run.
-   */
-  const handleHashClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey) return;
-    if (event.shiftKey || event.altKey) return;
-
-    const link = (event.target as HTMLElement).closest("a[href^='#']");
-    const id = link?.getAttribute("href")?.slice(1);
-    const target = id ? document.getElementById(id) : null;
-    if (!target) return;
-
-    event.preventDefault();
-    if (lenis) lenis.scrollTo(target);
-    else target.scrollIntoView({ behavior: "smooth" });
-  };
 
   useGSAP(
     () => {
-      const section = root.current;
-      if (!section) return;
-
-      /* Hand the deferred copy back from the anti-flash style, always. */
-      gsap.set("[data-hero-cta]", { visibility: "visible" });
-
       /*
-       * The slot only clips while its content is still travelling; once it has
-       * landed it must not cut off a focus ring.
+       * Hand the deferred copy back from the anti-flash style. This runs
+       * whether or not the sequence plays, because if it never plays then
+       * nothing else will ever make this text visible.
        */
-      const slot = section.querySelector("[data-hero-slot]");
-      const openSlot = () => {
-        gsap.set(slot, { overflow: "visible" });
-      };
-
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        openSlot();
-        return;
-      }
-
-      gsap.from("[data-hero-cta]", {
-        yPercent: 100,
-        duration: REVEAL.duration,
-        ease: REVEAL.ease,
-        delay: 0.75,
-        onComplete: openSlot,
-      });
-
-      gsap.from("[data-hero-photo]", {
-        scale: PHOTO_SCALE,
-        duration: PHOTO_DURATION,
-        ease: "expo.out",
-      });
-
-      const range = {
-        trigger: section,
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      } as const;
-
-      gsap.to("[data-hero-content]", {
-        y: EXIT_Y,
-        opacity: EXIT_OPACITY,
-        ease: "none",
-        scrollTrigger: { ...range },
-      });
-
-      gsap.fromTo(
-        "[data-hero-frame]",
-        { yPercent: -PHOTO_DRIFT },
-        {
-          yPercent: PHOTO_DRIFT,
-          ease: "none",
-          scrollTrigger: { ...range },
-        },
-      );
+      gsap.set("[data-masked]", { visibility: "visible" });
     },
     { scope: root },
   );
@@ -157,63 +59,51 @@ export function Hero() {
   return (
     <section
       ref={root}
-      className="relative grid min-h-[100svh] grid-cols-[45fr_55fr] max-md:grid-cols-1"
+      data-hero-container
+      className="relative h-[100svh] w-full overflow-hidden"
     >
-      <div className="relative z-10 flex flex-col justify-center px-64 py-120 max-md:min-h-[62svh] max-md:px-20 max-md:py-90">
-        <div data-hero-content>
-          <h1 data-hero-title className="text-h0 max-md:text-mh1 font-semibold">
-            {TITLE_LINES.map((line, index) => (
-              <MaskedText
-                key={line}
-                as="span"
-                mode="mount"
-                delay={index * REVEAL.stagger}
-                className="block w-fit"
-              >
-                {line}
-              </MaskedText>
-            ))}
-          </h1>
-
-          <div data-hero-slot className="mt-48 overflow-hidden max-md:mt-32">
-            <div
-              data-masked
-              data-hero-cta
-              onClick={handleHashClick}
-              className="flex w-fit flex-wrap items-center gap-32"
-            >
-              <PillButton variant="solid" href={SITE.bookingUrl}>
-                Book now
-              </PillButton>
-              <PillButton variant="draw" href="#services">
-                View services
-              </PillButton>
-            </div>
-          </div>
-        </div>
+      <div className="absolute inset-0">
+        <Image
+          src={miguelAtWork.src}
+          alt={miguelAtWork.alt}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[50%_30%]"
+        />
+        {/* The plate and the standing lines sit on photography, so the frame
+            needs a floor under them rather than luck with the exposure. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-linear-to-t from-ink/70 via-ink/25 to-ink/40"
+        />
       </div>
 
       {/*
-        The photo column clips its own frame, so neither the mount scale nor the
-        scrub drift can ever push the picture past the split or the viewport
-        edges. The frame runs 8% taller than the column and is hung 4% above it,
-        which is the slack the drift travels in.
+        The plate: 30% by 70% as measured on the card, a portrait letterbox on
+        desktop. On phones it takes 75% of the width, or the name cannot be set
+        inside it.
       */}
-      <div className="relative overflow-hidden max-md:aspect-[4/5]">
-        <div
-          data-hero-frame
-          className="absolute inset-x-0 top-[-4%] bottom-[-4%]"
+      <div
+        data-hero-card
+        className="absolute top-1/2 left-1/2 grid h-[70%] w-[30%] -translate-x-1/2 -translate-y-1/2 place-items-center bg-bone text-ink max-md:h-[62%] max-md:w-[75%]"
+      >
+        <h1
+          data-masked
+          data-hero-card-title
+          className="text-h2 max-md:text-mh2 px-24 text-center font-semibold uppercase"
         >
-          <Image
-            data-hero-photo
-            src={PHOTO_SRC}
-            alt={PHOTO_ALT}
-            fill
-            sizes={PHOTO_SIZES}
-            priority
-            className="object-cover"
-          />
-        </div>
+          {SITE.shortName}
+        </h1>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-64 py-48 pr-144 max-md:flex-col max-md:items-start max-md:gap-8 max-md:px-20 max-md:py-28 max-md:pr-96">
+        <p data-masked className="text-p2 max-md:text-mp2 font-medium">
+          {STANDING_LEFT}
+        </p>
+        <p data-masked className="text-p2 max-md:text-mp2 font-medium">
+          {STANDING_RIGHT}
+        </p>
       </div>
     </section>
   );

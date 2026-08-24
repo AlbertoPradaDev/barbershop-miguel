@@ -49,7 +49,7 @@ import { barber } from "@/lib/content/barbers";
  */
 
 const INTRO =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.";
+  "One chair, one barber. You book with Miguel, and Miguel is who cuts your hair.";
 
 /*
  * Measured off the artboard. The content box is 1792 wide (1920 less px-64

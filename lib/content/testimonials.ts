@@ -1,65 +1,74 @@
 /*
  * Review wall content. `initial` is stored rather than derived so the avatar
- * chip never depends on string slicing at render time, and every review is a
- * five star review by design of the placeholder set.
+ * chip never depends on string slicing at render time.
+ *
+ * These are the client's REAL Booksy reviews, copied verbatim on 2026-08-24,
+ * including the Spanish ones and the emoji: the shop serves a bilingual
+ * clientele and the barber answers in both, so flattening them to English would
+ * misrepresent the place. Nothing here is edited for length or tone. The
+ * profile stood at 5.0 from 123 reviews, 122 of them five star.
+ *
+ * `date` is an absolute date, not a "2 months ago" string. Relative time is
+ * baked into a static build and starts lying the day after it ships.
  */
 
 export interface Review {
   id: string;
   author: string;
   initial: string;
-  timeAgo: string;
+  /** Absolute, so it cannot go stale in a static build. */
+  date: string;
   rating: 5;
   text: string;
 }
 
 export const reviews: Review[] = [
   {
-    id: "review-1",
-    author: "Jordan Miller",
-    initial: "J",
-    timeAgo: "2 months ago",
+    id: "review-zach",
+    author: "Zach",
+    initial: "Z",
+    date: "Aug 10, 2026",
     rating: 5,
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. Incididunt ut labore et dolore magna aliqua enim ad minim veniam.",
+    text: "I have been going to Miguel for a few years now and always happy with my cut! He is very professional and friendly and takes great care to make sure I'm happy! 10/10 would recommend!",
   },
   {
-    id: "review-2",
-    author: "Alicia Barnes",
-    initial: "A",
-    timeAgo: "3 weeks ago",
-    rating: 5,
-    text: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.",
-  },
-  {
-    id: "review-3",
-    author: "Marcus Webb",
+    id: "review-miguel",
+    author: "Miguel",
     initial: "M",
-    timeAgo: "1 month ago",
+    date: "Aug 13, 2026",
     rating: 5,
-    text: "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia. Deserunt mollit anim id est laborum sed ut perspiciatis unde omnis.",
+    text: "Miguel does a fantastic job! Pays attention to detail and puts his clients first every time. I would and have recommended him.",
   },
   {
-    id: "review-4",
-    author: "Rachel Nguyen",
-    initial: "R",
-    timeAgo: "5 months ago",
+    id: "review-yamalier",
+    author: "Yamalier",
+    initial: "Y",
+    date: "Aug 7, 2026",
     rating: 5,
-    text: "Iste natus error sit voluptatem accusantium doloremque laudantium totam rem. Aperiam eaque ipsa quae ab illo inventore veritatis et quasi architecto.",
+    text: "Miguel does a great job, very clean enviroment, super nice guy. I will definitely keep coming.",
   },
   {
-    id: "review-5",
-    author: "Ethan Brooks",
-    initial: "E",
-    timeAgo: "6 days ago",
+    id: "review-jda",
+    author: "JD.A",
+    initial: "J",
+    date: "Aug 14, 2026",
     rating: 5,
-    text: "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Sed quia consequuntur magni dolores eos qui ratione voluptatem sequi.",
+    text: "Cool dude and he cuts clean and fast been going to him since I was in high school",
   },
   {
-    id: "review-6",
-    author: "Sofia Ramirez",
-    initial: "S",
-    timeAgo: "4 months ago",
+    id: "review-krysdalia",
+    author: "Krysdalia",
+    initial: "K",
+    date: "Aug 16, 2026",
     rating: 5,
-    text: "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet consectetur. Adipisci velit sed quia non numquam eius modi tempora incidunt ut labore.",
+    text: "My boys always looking forward to getting their haircuts.",
+  },
+  {
+    id: "review-julio",
+    author: "Julio",
+    initial: "J",
+    date: "Aug 12, 2026",
+    rating: 5,
+    text: "Excelente servicio muy buen corte de cabello",
   },
 ];

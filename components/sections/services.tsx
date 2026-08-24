@@ -54,7 +54,7 @@ import { SITE } from "@/lib/content/site";
  */
 
 const INTRO =
-  "Lorem ipsum dolor sit amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.";
+  "Five services, each booked for the time the work actually takes. Every price below is the price on the booking page.";
 
 /* The trace enters top right, elbows to the left rail and hands x 120 to About. */
 const TRACE_D = "M 1180 -40 V 210 Q 1180 238 1152 238 H 148 Q 120 238 120 266 V 1150";

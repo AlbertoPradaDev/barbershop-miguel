@@ -41,13 +41,14 @@ import { SITE } from "@/lib/content/site";
  */
 
 const BOOKING_LINE =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.";
+  "The calendar is open 24 hours a day on Booksy. Pick a slot and the chair is yours.";
 const BOOKING_NOTE = "Booking opens in a new tab";
 const MAP_TITLE = "Map of the shop location";
 const DIRECTIONS_LABEL = "Get directions";
 
-/* tel: needs digits and the country plus, never the display formatting. */
-const TEL_HREF = `tel:${SITE.phone.replace(/[^\d+]/g, "")}`;
+/* tel: needs digits and the country plus, never the display formatting.
+   Null while the client still owes us a real number. */
+const TEL_HREF = SITE.phone ? `tel:${SITE.phone.replace(/[^\d+]/g, "")}` : null;
 
 /*
  * OSM's embed wants bbox as min lng, min lat, max lng, max lat. A 0.012 x 0.006
@@ -81,6 +82,8 @@ const ROW_FIELD = [
   "motion-reduce:transition-none",
 ].join(" ");
 
+/* Applied to the single permitted <div> inside the <dl>, so it carries both the
+   row's positioning context and the flex line. */
 const ROW_LINE = [
   "relative flex items-baseline justify-between gap-24 py-14",
   "transition-transform duration-500 ease-osmo",
@@ -216,29 +219,49 @@ export function Contact() {
           <div ref={left}>
             <SectionHeading>Visit us</SectionHeading>
 
-            <div className="mt-40 max-md:mt-28 flex flex-col items-start gap-12">
-              <a href={TEL_HREF} className={LINK}>
-                {SITE.phone}
-              </a>
-              <a href={`mailto:${SITE.email}`} className={LINK}>
-                {SITE.email}
-              </a>
-            </div>
+            {/*
+              Renders nothing at all while both are null, rather than an empty
+              gap: the address and hours below carry the section on their own,
+              and a heading over blank space reads as a broken page.
+            */}
+            {(TEL_HREF || SITE.email) && (
+              <div className="mt-40 max-md:mt-28 flex flex-col items-start gap-12">
+                {TEL_HREF && (
+                  <a href={TEL_HREF} className={LINK}>
+                    {SITE.phone}
+                  </a>
+                )}
+                {SITE.email && (
+                  <a href={`mailto:${SITE.email}`} className={LINK}>
+                    {SITE.email}
+                  </a>
+                )}
+              </div>
+            )}
 
+            {/*
+              ONE div between the <dl> and its <dt>/<dd>, never two. HTML allows
+              exactly one wrapper there, and this had a styling div inside the
+              row div: that second level broke the association, so a screen
+              reader announced ten loose fragments instead of five day-and-time
+              pairs. Opening hours are the single most likely reason someone is
+              using assistive tech on this page at all.
+
+              The two wrappers are merged rather than one being deleted: the row
+              needs `group relative` for the hover field and the flex line needs
+              its own layout, so both sets of classes live on the one permitted
+              div and the hover field is positioned against it directly.
+            */}
             <dl className="trace-occlude mt-48 max-md:mt-32 font-mono text-p2 max-md:text-mp2">
               {SITE.hours.map((row) => (
                 <div
                   key={row.days}
                   data-hours-row
-                  className="group relative border-b border-line themed-border"
+                  className={`group border-b border-line themed-border ${ROW_LINE}`}
                 >
                   <span aria-hidden className={ROW_FIELD} />
-                  <div className={ROW_LINE}>
-                    <dt className="themed-muted">{row.days}</dt>
-                    <dd>
-                      {row.closed ? "Closed" : `${row.open} to ${row.close}`}
-                    </dd>
-                  </div>
+                  <dt className="themed-muted">{row.days}</dt>
+                  <dd>{row.closed ? "Closed" : `${row.open} to ${row.close}`}</dd>
                 </div>
               ))}
             </dl>
