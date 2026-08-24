@@ -10,12 +10,20 @@ import { aboutPhotos } from "@/lib/content/photos";
 
 /*
  * "The shop": the room itself. Copy on the left, two overlapping portraits on
- * the right, one wide plate underneath, with the trace cord running down the
- * left gutter and elbowing across into the photo column.
+ * the right, with the trace cord running down the left gutter and elbowing
+ * across into the photo column.
+ *
+ * There WAS a full width plate underneath the pair. It was removed on request:
+ * at 1008 artboard px tall it dominated the section and pulled the eye past the
+ * copy. Removing it shortened the section by 1148 artboard px on desktop and
+ * 267 on mobile, which is why the TraceSegment height and its trailing vertical
+ * below are smaller than they look in git history: that cord is hand-authored
+ * and never measures the DOM, so it has to be re-cut whenever this section
+ * changes length or it runs on past the end of it.
  *
  * Photography is real, and it comes from lib/content/photos.ts (aboutPhotos:
- * two uprights, then the wide shop interior). Alt text travels with the photo,
- * so swapping an id there swaps the picture and its description together.
+ * two uprights). Alt text travels with the photo, so swapping an id there swaps
+ * the picture and its description together.
  *
  * Motion recipe (one useGSAP, scoped to the section). Everything that enters
  * also leaves:
@@ -45,15 +53,15 @@ import { aboutPhotos } from "@/lib/content/photos";
  * offset would then live inside the same y channel the exit tween animates, so
  * a figure sitting at y 90 would be yanked to y -40 instead of drifting by 40.
  * Offsetting a positioned element through inset keeps it out of that channel,
- * costs no layout (same as translate did), and lets all three figures share one
+ * costs no layout (same as translate did), and lets both figures share one
  * absolute y target.
  *
  * clip-path is the one non transform/opacity property here: it is a once-only
- * paint level tween on three elements, and it is what gives the plates their
+ * paint level tween on two elements, and it is what gives the plates their
  * "developing print" open. Reduced motion creates no tweens at all; the served
  * markup is already the final state.
  *
- * Occlusion: the heading, both copy blocks and all three figures carry
+ * Occlusion: the heading, both copy blocks and both figures carry
  * .trace-occlude, an opaque page-bg plate, so the cord is hidden behind content
  * and reads only in the gaps between blocks.
  */
@@ -65,20 +73,18 @@ const PULL_QUOTE =
 const BODY =
   "One chair on Spring Forest Road, in Raleigh. Appointments are booked for the time the work actually takes, so nobody is rushed out of the seat and the finish gets the attention it needs. Some clients have been coming since high school, and plenty bring their kids. English or Spanish, whichever you are more comfortable in.";
 
-/* aboutPhotos is ordered upright, upright, wide, which is exactly the layout. */
-const [PORTRAIT_A, PORTRAIT_B, WIDE] = aboutPhotos;
+/* aboutPhotos is two uprights, which is exactly the layout. */
+const [PORTRAIT_A, PORTRAIT_B] = aboutPhotos;
 
 /*
  * Measured off the artboard, not guessed. Desktop content box is 1792 wide
  * (1920 less px-64 either side); the photo column is (1792 - 80) / 2 = 856, so
  * the taller plate at 78% is about 668px, or 36vw. On the 390 artboard the
- * column is 350 and the plate at 86% is about 301px, or 77vw. The wide plate
- * spans the whole content box: 1792 of 1920 is 94vw, 350 of 390 is 90vw.
+ * column is 350 and the plate at 86% is about 301px, or 77vw.
  */
 const PORTRAIT_SIZES = "(max-width: 767px) 80vw, 36vw";
-const WIDE_SIZES = "(max-width: 767px) 90vw, 94vw";
 
-/* All three plates share one surface recipe: rounded-media (24 artboard px, the
+/* Both plates share one surface recipe: rounded-media (24 artboard px, the
    image plate step of the radius scale). Images carry no outline.
    No shadow anywhere; the opaque plate is all the depth they get.
    trace-occlude is that opaque plate, and it also keeps the cord from reading
@@ -216,10 +222,10 @@ export function About() {
     <section id="about" ref={section} className="relative">
       <TraceSegment
         anchor="top"
-        height={2901}
-        heightMobile={1510}
-        d="M 120 -40 V 1372 Q 120 1400 148 1400 H 1432 Q 1460 1400 1460 1428 V 2941"
-        dMobile="M 24 -40 V 1550"
+        height={1753}
+        heightMobile={1243}
+        d="M 120 -40 V 1372 Q 120 1400 148 1400 H 1432 Q 1460 1400 1460 1428 V 1793"
+        dMobile="M 24 -40 V 1283"
       />
 
       <div
@@ -279,13 +285,6 @@ export function About() {
               </figure>
             </div>
           </div>
-
-          <figure
-            data-figure
-            className={`${FIGURE_BASE} mt-140 aspect-video w-full max-md:mt-70`}
-          >
-            <PhotoLayer src={WIDE.src} alt={WIDE.alt} sizes={WIDE_SIZES} />
-          </figure>
         </div>
       </div>
     </section>

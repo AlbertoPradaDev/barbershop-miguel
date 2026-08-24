@@ -47,10 +47,13 @@ export const miguelAtWork: Photo = {
 };
 
 /*
- * About section. The layout destructures this as [upright, upright, wide], so
- * the ORDER here is the layout: change it and the plates change places. The
- * third frame carries the room itself (chairs, mirrors, the ceiling lights),
- * which is what the wide plate is there to show.
+ * About section. The layout destructures this as [upright, upright], so the
+ * ORDER here is the layout: change it and the two plates swap places.
+ *
+ * There was a third, wide frame; the plate that showed it was removed on
+ * request. Rather than leave a committed 349KB photograph referenced by
+ * nothing, it moved to the gallery, which is why cut-design-kid appears there
+ * and not here.
  */
 export const aboutPhotos: Photo[] = [
   {
@@ -63,12 +66,6 @@ export const aboutPhotos: Photo[] = [
     id: "cut-locs-design",
     src: p("cut-locs-design"),
     alt: "Locs tied up above a shaved design at the temple",
-    orientation: "portrait",
-  },
-  {
-    id: "cut-design-kid",
-    src: p("cut-design-kid"),
-    alt: "A freehand design cut into a young client's fade, the shop floor behind",
     orientation: "portrait",
   },
 ];

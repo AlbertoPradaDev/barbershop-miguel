@@ -7,11 +7,12 @@
  * fill the rest, so next/image `fill` crops into each card without cutting a
  * head off. Titles name the actual cut in the frame, not a generic style list.
  *
- * Seven rather than the ten this rail was built with: twelve business owned
- * photographs exist in total, and the other five are doing more useful work as
- * the hero, the portrait and the three About plates. Padding the rail back out
- * would mean either reusing frames or going back to stock, and a shorter rail
- * of real cuts beats a longer one of neither.
+ * Eight rather than the ten this rail was built with: twelve business owned
+ * photographs exist in total, and the rest are doing more useful work as the
+ * hero, the portrait and the two About plates. Padding the rail back out would
+ * mean either reusing frames or going back to stock, and a shorter rail of real
+ * cuts beats a longer one of neither. The eighth arrived when the wide About
+ * plate was removed and its photograph would otherwise have been orphaned.
  */
 
 import type { Photo } from "@/lib/content/photos";
@@ -51,6 +52,13 @@ export const cuts: Cut[] = [
     image: "/photos/cut-beard-high-fade.jpg",
     alt: "A high fade with a shaped full beard, seen from the front",
     tall: false,
+  },
+  {
+    id: "cut-design-kid",
+    title: "Freehand Detail",
+    image: "/photos/cut-design-kid.jpg",
+    alt: "A freehand design cut into a young client's fade, the shop floor behind",
+    tall: true,
   },
   {
     id: "cut-hard-part",
