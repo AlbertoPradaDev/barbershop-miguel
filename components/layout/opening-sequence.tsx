@@ -56,16 +56,6 @@ const TAGS = ["Precision", "Comfort", "Care"] as const;
  */
 const LOCKUP_SCALE = { desktop: 3, mobile: 2 } as const;
 
-const SEEN_KEY = "mrs-intro";
-
-function alreadySeen(): boolean {
-  try {
-    return sessionStorage.getItem(SEEN_KEY) === "seen";
-  } catch {
-    return false;
-  }
-}
-
 type Phase = "deciding" | "run" | "skip";
 
 /*
@@ -75,28 +65,31 @@ type Phase = "deciding" | "run" | "skip";
  * "it is broken". Read it in devtools:
  *   document.querySelector("[data-opening-sequence]").dataset.reason
  */
-type Reason = "run" | "forced" | "seen" | "reduced-motion";
+type Reason = "run" | "forced" | "suppressed" | "reduced-motion";
 
 function decide(): { phase: Phase; reason: Reason } {
   /*
-   * ?intro=1 replays it, ?intro=0 suppresses it. sessionStorage survives a
-   * reload and only clears when the TAB closes, so without this the only way to
-   * see the sequence twice is to open a new tab, which is a miserable way to
-   * review an animation or to demo it to a client.
+   * It plays on EVERY load. It used to run once per session, which was the
+   * wrong call: sessionStorage survives a reload and clears only when the tab
+   * closes, so after one view the animation was simply gone and there was no
+   * way to tell that from it being broken. The cost of playing every time is
+   * paid back by the skip below, which lets anyone who has seen it get past it
+   * instantly.
    *
-   * The override deliberately does NOT beat reduced motion. Someone who has
-   * asked their OS for less movement should not get four seconds of it because
-   * a query string said so, and if reduced motion is the reason the sequence is
-   * missing then that is exactly what the reader needs to find out.
+   * ?intro=0 suppresses it; ?intro=1 is kept because it reads clearly in a
+   * shared link, though it now matches the default.
+   *
+   * Neither overrides reduced motion. Someone who has asked their OS for less
+   * movement should not get four seconds of it because a query string said so,
+   * and if reduced motion IS why the sequence is missing, that is exactly what
+   * the reader needs to find out.
    */
-  const forced = new URLSearchParams(window.location.search).get("intro");
-
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return { phase: "skip", reason: "reduced-motion" };
   }
-  if (forced === "0") return { phase: "skip", reason: "seen" };
+  const forced = new URLSearchParams(window.location.search).get("intro");
+  if (forced === "0") return { phase: "skip", reason: "suppressed" };
   if (forced === "1") return { phase: "run", reason: "forced" };
-  if (alreadySeen()) return { phase: "skip", reason: "seen" };
   return { phase: "run", reason: "run" };
 }
 
@@ -159,6 +152,10 @@ export function OpeningSequence() {
       if (!top || !bottom || !hero || !card || !cardTitle) return;
 
       document.documentElement.style.overflow = "hidden";
+
+      /* Assigned once the timeline exists; release() runs after that, and the
+         cleanup path guards on it being set. */
+      let detachSkip = () => {};
 
       const isMobile = window.innerWidth <= 1000;
       const BIG = isMobile ? LOCKUP_SCALE.mobile : LOCKUP_SCALE.desktop;
@@ -277,6 +274,7 @@ export function OpeningSequence() {
       gsap.set(maskOf(outroChars("bottom")[0]), bigB.b);
 
       const release = () => {
+        detachSkip();
         document.documentElement.style.overflow = "";
         window.scrollTo(0, 0);
         /* Give the hero back to the document: a section left at z-index 90
@@ -284,20 +282,32 @@ export function OpeningSequence() {
         gsap.set(hero, { clearProps: "position,zIndex,clipPath" });
         gsap.set(card, { clearProps: "clipPath" });
         ScrollTrigger.refresh();
-        try {
-          /* A forced replay must NOT mark itself seen, or ?intro=1 would work
-             exactly once and then look broken again. */
-          if (!window.location.search.includes("intro=1")) {
-            sessionStorage.setItem(SEEN_KEY, "seen");
-          }
-        } catch {
-          /* Nothing to do; it simply plays again next load. */
-        }
         gsap.set(root.current, { display: "none" });
       };
 
       /* Timeline, compressed from the card's ~7s. Beats kept in proportion. */
       const tl = gsap.timeline({ defaults: { ease: HOP }, onComplete: release });
+
+      /*
+       * Any deliberate input runs it out fast. This is what makes playing on
+       * every load acceptable: a returning visitor is never held for four and a
+       * half seconds, they touch anything and they are through in well under
+       * one. Ramping timeScale rather than jumping to the end keeps the tear
+       * and the doors readable instead of snapping the page into place, and
+       * onComplete still fires normally so nothing is left half applied.
+       *
+       * scroll/wheel/touchmove are NOT listened for: the page is locked while
+       * the panel is up, and a stray trackpad nudge should not count as intent.
+       */
+      const skip = () => {
+        gsap.to(tl, { timeScale: 7, duration: 0.25, ease: "power2.in" });
+      };
+      const SKIP_ON = ["pointerdown", "keydown"] as const;
+      SKIP_ON.forEach((type) =>
+        window.addEventListener(type, skip, { once: true, passive: true }),
+      );
+      detachSkip = () =>
+        SKIP_ON.forEach((type) => window.removeEventListener(type, skip));
 
       TAGS.forEach((_, i) => {
         tl.to(
@@ -382,7 +392,9 @@ export function OpeningSequence() {
 
       return () => {
         /* Unmounting mid sequence must never leave the page unscrollable, the
-           hero clipped shut, or the hero stranded above the navbar. */
+           hero clipped shut, the hero stranded above the navbar, or a listener
+           still bound to a timeline that no longer exists. */
+        detachSkip();
         document.documentElement.style.overflow = "";
         gsap.set(hero, { clearProps: "position,zIndex,clipPath" });
         gsap.set(card, { clearProps: "clipPath" });
