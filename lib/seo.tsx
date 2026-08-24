@@ -11,13 +11,9 @@ import type { Faq } from "@/lib/content/faq";
  * The canonical origin, and the only place it is written down.
  *
  * It used to be a hard-coded example.com, which then went out in the JSON-LD as
- * the business's official URL. Now it reads NEXT_PUBLIC_SITE_URL, so the real
- * domain is set once in the deployment environment and every canonical, every
- * Open Graph URL and the structured data all follow it.
- *
- * The localhost fallback is deliberately obvious. If it ever appears in
- * production output, the environment variable was not set, and that is easier
- * to spot in a share preview than a plausible-looking placeholder domain.
+ * the business's official URL. It is now resolved, in the order below, so that
+ * every canonical, every Open Graph URL and the structured data agree on one
+ * origin without it being written down twice.
  */
 function resolveSiteUrl(): string {
   /* 1. An explicit domain always wins, and is what a real custom domain sets. */
