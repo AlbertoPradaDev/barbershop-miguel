@@ -2,7 +2,7 @@
 
 import { useRef, type MouseEvent } from "react";
 import Image from "next/image";
-import { gsap, useGSAP, REVEAL } from "@/lib/gsap";
+import { gsap, useGSAP, ScrollTrigger, REVEAL } from "@/lib/gsap";
 import { MaskedText } from "@/components/ui/masked-text";
 import { PillButton } from "@/components/ui/pill-button";
 import { useLenis } from "@/components/providers/smooth-scroll-provider";
@@ -10,38 +10,39 @@ import { SITE } from "@/lib/content/site";
 import { pexels } from "@/lib/content/photos";
 
 /*
- * Hero: an edge to edge two column split, no page gutter. The left 45% is the
- * black band itself, carrying four short display lines and the CTA row and
- * nothing else above or beside them; the right 55% is one full bleed
- * photograph running flush to the top, right and bottom of the viewport. On
- * phones the panel stacks over the photo. The section stays transparent and
- * token driven: it is the dark band in page.tsx that paints the panel black.
+ * Hero: editorial expand. The display lines sit on the band's own ink ground
+ * with the photograph below them in a rounded framed window. While the section
+ * is pinned, scrolling melts the frame - margins, top edge and corner radius all
+ * run to zero - until the picture is full bleed, the image de-zooms into place,
+ * a scrim settles over it and the type drifts up and out. Then the pin releases.
  *
- * The panel keeps the site gutter (px-64) instead of a wider one on purpose:
- * the longest headline line, "Meets Tradition", measures 713 artboard px at
- * text-h0, and 45% of the 1920 artboard less that gutter leaves 736, so the
- * four authored lines hold without wrapping and without shrinking the type.
+ * Ported from the Editorial Expand card in animations-hub (hero/01), which was
+ * measured on Barberia Achraf at Lighthouse 97 / CLS 0. Four things the card
+ * ships were dropped here because this project bans them: the scroll cue (no
+ * scroll indicators), the outlined accent line (no styled spans in the hero
+ * title), the star chip above the headline (no eyebrow, no meaningless
+ * metrics), and the button hover lift (no bounce anywhere).
+ *
+ * The pin is CSS sticky, not ScrollTrigger pin: the effect needs no pin
+ * spacer, and sticky costs nothing on a coarse pointer where the spec forbids
+ * pinning outright.
  *
  * Motion recipe:
  *   title   one MaskedText per line, mode "mount", delays stepped by
- *           REVEAL.stagger (0 / 0.07 / 0.14 / 0.21) on top of REVEAL.introDelay,
- *           so the four lines rise as one cascade. No x drift and no hover
- *           nudge: the reference block is static type.
+ *           REVEAL.stagger on top of REVEAL.introDelay, so the lines cascade.
  *   ctas    yPercent 100 -> 0 inside an overflow-hidden slot, duration 1,
- *           expo.out, delay 0.75. No fade. On complete the slot is handed back
- *           overflow: visible so a focus ring never clips. Neither button
- *           follows the pointer: no magnetic wrapper anywhere in the hero.
- *   photo   scale 1.06 -> 1 over 1.2s expo.out on mount, plus a scrubbed
- *           parallax on its frame (yPercent -2 -> 2) over the same range as the
- *           exit. The frame is 108% tall and inset 4% top and bottom, so the
- *           drift can never expose an edge, and the column clips it regardless.
- *   exit    one scrubbed ScrollTrigger ("top top" -> "bottom top") lifting the
- *           panel content y -120 to opacity 0.1 while the photo holds its own
- *           column.
- * The CTA row carries data-masked, so the head script's
- * `[data-masked]{visibility:hidden}` holds it until this effect hands it back:
- * no flash of the pre-animation state above the fold. Reduced motion restores
- * visibility, opens the slot and builds no tweens at all.
+ *           expo.out, delay 0.75. On complete the slot is handed back
+ *           overflow: visible so a focus ring never clips.
+ *   media   opacity 0 -> 1, 0.9s expo.out, delay 0.5, so the frame arrives
+ *           under a headline that is already moving.
+ *   scrub   ONE ScrollTrigger over the pinwrap, "top top" -> "bottom bottom",
+ *           driving five quickSetters per frame: the frame's clip-path, the
+ *           image scale (1.16 -> 1.02), the scrim (0 -> 0.85) and the type's
+ *           opacity and lift. Linear on purpose - the finger is the easing, and
+ *           an ease here front-loads the reveal badly.
+ *   exit    none of its own. The expanding frame is the exit.
+ * Reduced motion drops the extra scroll length, unsticks the pin and builds no
+ * tweens at all, leaving the static framed state the stylesheet already paints.
  */
 
 /* Client reference copy, verbatim, four lines. No italics, no styled spans. */
@@ -52,22 +53,44 @@ const TITLE_LINES = [
   "Time",
 ] as const;
 
-/* Barber working a comb through the top while a low fade sits underneath: the
-   same framing as the reference photograph. LCP image, so it ships at 1600. */
-const PHOTO_SRC = pexels(2076930, 1600);
+/* Wide frame at rest, full screen at p=1, so it is served and sized at 100vw. */
+const PHOTO_SRC = pexels(2076930, 1920);
 const PHOTO_ALT = "Barber combing and cutting a client's hair at the chair";
-const PHOTO_SIZES = "(max-width: 767px) 100vw, 55vw";
+const PHOTO_SIZES = "100vw";
 
-/* Mount: the frame settles out of a 6% push in. */
-const PHOTO_SCALE = 1.06;
-const PHOTO_DURATION = 1.2;
+/*
+ * Frame geometry, as fractions of the pin box. The side and bottom margins are
+ * the card's measured defaults; the frame's TOP edge is not, see deriveTop().
+ */
+const SIDE_FRAC = 0.05;
+const BOTTOM_FRAC = 0.04;
 
-/* Scrub: the photo lags the panel by 2% of its frame in each direction. */
-const PHOTO_DRIFT = 2;
+/*
+ * Corner radius at rest, in artboard px, mirroring --radius-media. One artboard
+ * px is 1/16 rem by the --spacing token, so 24 * (rootPx / 16) resolves to
+ * exactly the 1.5rem the stylesheet paints: the CSS fallback and the first JS
+ * frame cannot disagree.
+ */
+const RADIUS_ARTBOARD = 24;
 
-/* The panel content lifts and dims as the hero leaves; the photo does not. */
-const EXIT_OPACITY = 0.1;
-const EXIT_Y = -120;
+/* Inner de-zoom across the expand, and the veil that lands with it. */
+const IMG_SCALE_FROM = 1.16;
+const IMG_SCALE_TO = 1.02;
+const SCRIM_MAX = 0.85;
+
+/* The type clears out over the back half, once the photo has taken the screen. */
+const TYPE_FADE_START = 0.35;
+const TYPE_FADE_LENGTH = 0.45;
+const TYPE_LIFT = 30;
+
+/*
+ * Breathing room between the last CTA and the top edge of the frame, in
+ * artboard px, and the fractions of the pin the derived top edge is held
+ * between so neither a very short nor a very tall viewport can look wrong.
+ */
+const TYPE_GAP_ARTBOARD = 56;
+const TOP_MIN_FRAC = 0.42;
+const TOP_MAX_FRAC = 0.72;
 
 export function Hero() {
   const root = useRef<HTMLElement>(null);
@@ -96,6 +119,15 @@ export function Hero() {
       const section = root.current;
       if (!section) return;
 
+      const pinwrap =
+        section.querySelector<HTMLDivElement>("[data-hero-pinwrap]");
+      const pin = section.querySelector<HTMLDivElement>("[data-hero-pin]");
+      const top = section.querySelector<HTMLDivElement>("[data-hero-top]");
+      const media = section.querySelector<HTMLDivElement>("[data-hero-media]");
+      const scrim = section.querySelector<HTMLDivElement>("[data-hero-scrim]");
+      const image = section.querySelector<HTMLImageElement>("[data-hero-photo]");
+      if (!pinwrap || !pin || !top || !media || !scrim || !image) return;
+
       /* Hand the deferred copy back from the anti-flash style, always. */
       gsap.set("[data-hero-cta]", { visibility: "visible" });
 
@@ -121,98 +153,192 @@ export function Hero() {
         onComplete: openSlot,
       });
 
-      gsap.from("[data-hero-photo]", {
-        scale: PHOTO_SCALE,
-        duration: PHOTO_DURATION,
+      gsap.from(media, {
+        opacity: 0,
+        duration: 0.9,
         ease: "expo.out",
+        delay: 0.5,
       });
 
-      const range = {
-        trigger: section,
+      /*
+       * Per-frame writes go through quickSetters: they resolve the property
+       * once here instead of parsing a vars object on every scroll tick.
+       *
+       * The image scale is the exception and uses gsap.set. quickSetter(el,
+       * "scale") silently does nothing on this element: it is the first gsap
+       * call to touch the image, so the element's _gsap cache is still bare and
+       * the setter it hands back writes nowhere. It throws no error, which is
+       * the dangerous part - the scrub simply runs with a frozen image. Caught
+       * by the QA harness reading the computed transform; do not "simplify" it
+       * back to a quickSetter without re-running that check.
+       */
+      const setClip = gsap.quickSetter(media, "clipPath");
+      const setScrim = gsap.quickSetter(scrim, "opacity");
+      const setTypeFade = gsap.quickSetter(top, "opacity");
+      const setTypeLift = gsap.quickSetter(top, "y", "px");
+
+      /*
+       * The frame's resting geometry, resolved to px once per refresh and held
+       * in the closure. Everything here is a layout read, and a layout read on
+       * every scroll tick is a forced reflow in the middle of the one animation
+       * that has to stay at 60fps.
+       *
+       * Nothing it measures moves between refreshes: the pin resolves 100svh,
+       * which is the SMALLEST viewport height and so is deliberately immune to
+       * the mobile browser bars hiding and returning. ScrollTrigger refreshes on
+       * resize and orientation change, which is exactly when these do change.
+       */
+      let restTop = 0;
+      let restSide = 0;
+      let restBottom = 0;
+      let restRadius = 0;
+
+      const measure = () => {
+        /* Read the box off the pin, never off window.innerHeight, which tracks
+           the browser bars and would jog the frame's top edge mid-scroll. */
+        const height = pin.clientHeight;
+        const width = pin.clientWidth;
+        const artboardPx =
+          parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
+
+        /*
+         * Where the frame's top edge sits at rest. The card hard-codes this at
+         * 64% of the viewport, which only holds for copy the length the card
+         * was measured with: four display lines plus a CTA row overrun 64% of a
+         * 900px-tall laptop and collide with the frame. So it is derived from
+         * the measured type block and only clamped by those fractions.
+         */
+        const wanted = top.offsetHeight + TYPE_GAP_ARTBOARD * artboardPx;
+        restTop = Math.min(
+          Math.max(wanted, height * TOP_MIN_FRAC),
+          height * TOP_MAX_FRAC,
+        );
+        restSide = SIDE_FRAC * width;
+        restBottom = BOTTOM_FRAC * height;
+        restRadius = RADIUS_ARTBOARD * artboardPx;
+      };
+
+      const render = (progress: number) => {
+        const inv = 1 - progress;
+
+        setClip(
+          `inset(${restTop * inv}px ${restSide * inv}px ${restBottom * inv}px ${restSide * inv}px round ${restRadius * inv}px)`,
+        );
+        gsap.set(image, {
+          scale: IMG_SCALE_FROM - (IMG_SCALE_FROM - IMG_SCALE_TO) * progress,
+        });
+        setScrim(SCRIM_MAX * progress);
+        setTypeFade(
+          Math.max(
+            1 - Math.max((progress - TYPE_FADE_START) / TYPE_FADE_LENGTH, 0),
+            0,
+          ),
+        );
+        setTypeLift(-TYPE_LIFT * progress);
+      };
+
+      /*
+       * start/end span exactly the pinwrap's overhang, which is the 100svh the
+       * sticky child does not occupy, so progress is the sticky travel itself.
+       * Both callbacks take their progress off `self`: onRefresh fires
+       * synchronously inside create(), so a `const st = ScrollTrigger.create()`
+       * binding referenced in here would still be in its temporal dead zone.
+       */
+      ScrollTrigger.create({
+        trigger: pinwrap,
         start: "top top",
-        end: "bottom top",
-        scrub: true,
-      } as const;
-
-      gsap.to("[data-hero-content]", {
-        y: EXIT_Y,
-        opacity: EXIT_OPACITY,
-        ease: "none",
-        scrollTrigger: { ...range },
-      });
-
-      gsap.fromTo(
-        "[data-hero-frame]",
-        { yPercent: -PHOTO_DRIFT },
-        {
-          yPercent: PHOTO_DRIFT,
-          ease: "none",
-          scrollTrigger: { ...range },
+        end: "bottom bottom",
+        onUpdate: (self) => render(self.progress),
+        onRefresh: (self) => {
+          measure();
+          render(self.progress);
         },
-      );
+      });
     },
     { scope: root },
   );
 
   return (
-    <section
-      ref={root}
-      className="relative grid min-h-[100svh] grid-cols-[45fr_55fr] max-md:grid-cols-1"
-    >
-      <div className="relative z-10 flex flex-col justify-center px-64 py-120 max-md:min-h-[62svh] max-md:px-20 max-md:py-90">
-        <div data-hero-content>
-          <h1 data-hero-title className="text-h0 max-md:text-mh1 font-semibold">
-            {TITLE_LINES.map((line, index) => (
-              <MaskedText
-                key={line}
-                as="span"
-                mode="mount"
-                delay={index * REVEAL.stagger}
-                className="block w-fit"
-              >
-                {line}
-              </MaskedText>
-            ))}
-          </h1>
-
-          <div data-hero-slot className="mt-48 overflow-hidden max-md:mt-32">
-            <div
-              data-masked
-              data-hero-cta
-              onClick={handleHashClick}
-              className="flex w-fit flex-wrap items-center gap-32"
+    <section ref={root} className="relative">
+      {/*
+        200svh tall with a 100svh sticky child, so the scrub distance is exactly
+        one screen. Under reduced motion the extra length collapses and the
+        child unsticks, leaving a single static screen.
+      */}
+      <div
+        data-hero-pinwrap
+        className="h-[200svh] max-md:h-[170svh] motion-reduce:h-auto"
+      >
+        <div
+          data-hero-pin
+          className="sticky top-0 h-[100svh] isolate overflow-hidden motion-reduce:relative"
+        >
+          <div
+            data-hero-top
+            className="relative z-10 px-64 pt-160 max-md:px-20 max-md:pt-120"
+          >
+            <h1
+              data-hero-title
+              className="text-h0 max-md:text-mh1 max-w-[1180px] font-semibold"
             >
-              <PillButton variant="solid" href={SITE.bookingUrl}>
-                Book now
-              </PillButton>
-              <PillButton variant="draw" href="#services">
-                View services
-              </PillButton>
+              {TITLE_LINES.map((line, index) => (
+                <MaskedText
+                  key={line}
+                  as="span"
+                  mode="mount"
+                  delay={index * REVEAL.stagger}
+                  className="block w-fit"
+                >
+                  {line}
+                </MaskedText>
+              ))}
+            </h1>
+
+            <div data-hero-slot className="mt-48 overflow-hidden max-md:mt-32">
+              <div
+                data-masked
+                data-hero-cta
+                onClick={handleHashClick}
+                className="flex w-fit flex-wrap items-center gap-32"
+              >
+                <PillButton variant="solid" href={SITE.bookingUrl}>
+                  Book now
+                </PillButton>
+                <PillButton variant="draw" href="#services">
+                  View services
+                </PillButton>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/*
-        The photo column clips its own frame, so neither the mount scale nor the
-        scrub drift can ever push the picture past the split or the viewport
-        edges. The frame runs 8% taller than the column and is hung 4% above it,
-        which is the slack the drift travels in.
-      */}
-      <div className="relative overflow-hidden max-md:aspect-[4/5]">
-        <div
-          data-hero-frame
-          className="absolute inset-x-0 top-[-4%] bottom-[-4%]"
-        >
-          <Image
-            data-hero-photo
-            src={PHOTO_SRC}
-            alt={PHOTO_ALT}
-            fill
-            sizes={PHOTO_SIZES}
-            priority
-            className="object-cover"
-          />
+          {/*
+            The photo layer, revealed through an animated clip-path window. The
+            class below is the p=0 frame AND the no-JS fallback: JS replaces it
+            on the first ScrollTrigger refresh with the measured top edge. It
+            sits above the type on purpose, so the expanding frame swallows the
+            headline rather than sliding under it.
+          */}
+          <div
+            data-hero-media
+            className="absolute inset-0 z-20 bg-ink [clip-path:inset(64svh_5vw_4svh_5vw_round_var(--radius-media))] max-md:[clip-path:inset(54svh_5vw_4svh_5vw_round_var(--radius-media))]"
+          >
+            <Image
+              data-hero-photo
+              src={PHOTO_SRC}
+              alt={PHOTO_ALT}
+              fill
+              sizes={PHOTO_SIZES}
+              priority
+              /* Arbitrary transform, not the scale utility: GSAP writes the
+                 transform property, so the two can never compose. */
+              className="object-cover [transform:scale(1.16)]"
+            />
+            <div
+              data-hero-scrim
+              aria-hidden
+              className="absolute inset-0 bg-linear-to-t from-ink/55 via-ink/15 to-ink/25 opacity-0"
+            />
+          </div>
         </div>
       </div>
     </section>
