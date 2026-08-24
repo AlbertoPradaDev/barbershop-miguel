@@ -68,6 +68,38 @@ function alreadySeen(): boolean {
 
 type Phase = "deciding" | "run" | "skip";
 
+/*
+ * Why the sequence did or did not play, published on the wrapper as
+ * data-reason. Reviewing this thing is otherwise guesswork: it is correct for
+ * it to be missing most of the time, so "nothing happened" looks identical to
+ * "it is broken". Read it in devtools:
+ *   document.querySelector("[data-opening-sequence]").dataset.reason
+ */
+type Reason = "run" | "forced" | "seen" | "reduced-motion";
+
+function decide(): { phase: Phase; reason: Reason } {
+  /*
+   * ?intro=1 replays it, ?intro=0 suppresses it. sessionStorage survives a
+   * reload and only clears when the TAB closes, so without this the only way to
+   * see the sequence twice is to open a new tab, which is a miserable way to
+   * review an animation or to demo it to a client.
+   *
+   * The override deliberately does NOT beat reduced motion. Someone who has
+   * asked their OS for less movement should not get four seconds of it because
+   * a query string said so, and if reduced motion is the reason the sequence is
+   * missing then that is exactly what the reader needs to find out.
+   */
+  const forced = new URLSearchParams(window.location.search).get("intro");
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return { phase: "skip", reason: "reduced-motion" };
+  }
+  if (forced === "0") return { phase: "skip", reason: "seen" };
+  if (forced === "1") return { phase: "run", reason: "forced" };
+  if (alreadySeen()) return { phase: "skip", reason: "seen" };
+  return { phase: "run", reason: "run" };
+}
+
 /* One panel's worth of type. Rendered twice, identically, see the note above. */
 function Lockup({ side }: { side: "top" | "bottom" }): ReactNode {
   return (
@@ -97,11 +129,13 @@ function Lockup({ side }: { side: "top" | "bottom" }): ReactNode {
 export function OpeningSequence() {
   const root = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>("deciding");
+  const [reason, setReason] = useState<Reason | "deciding">("deciding");
 
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- matchMedia and sessionStorage do not exist on the server, so the decision cannot be made until after mount; exactly one post-mount render, same pattern as SmoothScrollProvider
-    setPhase(reduced || alreadySeen() ? "skip" : "run");
+    const d = decide();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- matchMedia, sessionStorage and location do not exist on the server, so the decision cannot be made until after mount; exactly one post-mount render, same pattern as SmoothScrollProvider
+    setPhase(d.phase);
+    setReason(d.reason);
   }, []);
 
   useGSAP(
@@ -251,7 +285,11 @@ export function OpeningSequence() {
         gsap.set(card, { clearProps: "clipPath" });
         ScrollTrigger.refresh();
         try {
-          sessionStorage.setItem(SEEN_KEY, "seen");
+          /* A forced replay must NOT mark itself seen, or ?intro=1 would work
+             exactly once and then look broken again. */
+          if (!window.location.search.includes("intro=1")) {
+            sessionStorage.setItem(SEEN_KEY, "seen");
+          }
         } catch {
           /* Nothing to do; it simply plays again next load. */
         }
@@ -361,6 +399,7 @@ export function OpeningSequence() {
       aria-hidden
       data-opening-sequence
       data-phase={phase}
+      data-reason={reason}
       /* motion-reduce:hidden is the accessibility path in CSS, so a reduced
          motion visitor never sees the panels even for the single frame before
          the effect runs. data-phase="skip" covers the already-seen case. */
