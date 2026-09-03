@@ -29,7 +29,7 @@ const PREFIX = "sessions/";
 export const storeEnabled = () => process.env.NEXT_PUBLIC_SIM_STORE === "1";
 
 const token = () => process.env.BLOB_READ_WRITE_TOKEN || "";
-const useBlob = () => process.env.SIM_STORE_BACKEND !== "fs" && Boolean(token());
+const blobBackend = () => process.env.SIM_STORE_BACKEND !== "fs" && Boolean(token());
 
 /* The store host is derivable from the token (vercel_blob_rw_<StoreId>_...,
    subdomain is the id lowercased); private stores live under .private. Saves a
@@ -48,7 +48,7 @@ function decodeImage(dataUrl: string): { buf: Buffer; ext: string; type: string 
 }
 
 async function putObject(pathname: string, body: Buffer | string, contentType: string) {
-  if (useBlob()) {
+  if (blobBackend()) {
     await put(pathname, body, {
       token: token(),
       access: "private",
@@ -147,7 +147,7 @@ async function readBlobJson(pathname: string): Promise<unknown | null> {
 /* Capped: every blob list is a billed operation, and the review page does one
    per session shown. Twelve is plenty to review at a time. */
 export async function listSessions(limit = 12): Promise<SessionSummary[]> {
-  if (useBlob()) {
+  if (blobBackend()) {
     const folded = await list({ token: token(), prefix: PREFIX, mode: "folded" });
     const ids = (folded.folders || [])
       .map((f: string) => f.replace(PREFIX, "").replace(/\/$/, ""))
@@ -236,7 +236,7 @@ export async function sessionFile(sessionId: string, name: string): Promise<{ bu
   if (!SAFE.test(sessionId) || !SAFE.test(name) || name.includes("..")) return null;
   const type =
     name.endsWith(".jpg") ? "image/jpeg" : name.endsWith(".json") || name.endsWith(".jsonl") ? "application/json" : `image/${path.extname(name).slice(1)}`;
-  if (useBlob()) {
+  if (blobBackend()) {
     try {
       const res = await fetch(`${blobHost()}/${PREFIX}${sessionId}/${name}`, {
         headers: { authorization: `Bearer ${token()}` },

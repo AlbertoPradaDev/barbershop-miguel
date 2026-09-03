@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored, minified MediaPipe runtime for the haircut simulator's face
+    // validator. Third-party build output, not our code: linting it only
+    // produces hundreds of no-unused-expressions warnings.
+    "public/vendor/**",
   ]),
 ]);
 

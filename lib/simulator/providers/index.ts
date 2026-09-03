@@ -22,10 +22,10 @@ export interface ImageGenerationProvider {
   simulate(photos: string[], style: Hairstyle, hairTexture?: string, angle?: SimAngle): Promise<string>;
 }
 
-const useMock = () => process.env.MOCK_AI === "1" || !geminiConfigured();
+const mockMode = () => process.env.MOCK_AI === "1" || !geminiConfigured();
 
 export function getVisionProvider(): VisionProvider {
-  if (useMock()) {
+  if (mockMode()) {
     return { name: "mock", mock: true, analyze: async () => mockAnalyze() };
   }
   return {
