@@ -57,7 +57,14 @@ import type { NextConfig } from "next";
  */
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  /*
+   * 'wasm-unsafe-eval' exists for the haircut simulator's on-device face
+   * validator (MediaPipe, self-hosted under /public/vendor). Compiling ANY
+   * WebAssembly requires it; without it the wasm is refused silently and the
+   * photo gates never arm. It permits wasm compilation only, not JS eval, and
+   * script-src still refuses every external origin.
+   */
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "frame-src https://www.openstreetmap.org",

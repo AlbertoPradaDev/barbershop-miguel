@@ -143,6 +143,9 @@ export const SITE: Site = {
     { label: "The barber", href: "#team" },
     { label: "Gallery", href: "#gallery" },
     { label: "Reviews", href: "#reviews" },
+    /* A route, not an anchor: every navLink consumer lets non hash hrefs
+       navigate normally instead of smooth scrolling. */
+    { label: "Try a haircut", href: "/simulator" },
     { label: "FAQ", href: "#faq" },
     { label: "Contact", href: "#contact" },
   ],
