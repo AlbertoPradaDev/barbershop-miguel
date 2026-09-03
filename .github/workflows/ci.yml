@@ -34,6 +34,13 @@ jobs:
       # versions.
       - run: npm ci
 
+      # Next generates the route helper types (LayoutProps, PageProps) during a
+      # build, and layout.tsx uses LayoutProps. A bare tsc on a fresh checkout
+      # cannot see them, which is why this job failed on every run since it was
+      # added. typegen writes exactly those definitions without a full build.
+      - name: Generate route types
+        run: npx next typegen
+
       - name: Typecheck
         run: npx tsc --noEmit
 
