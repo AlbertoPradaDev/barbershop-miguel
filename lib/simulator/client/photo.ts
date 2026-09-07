@@ -64,14 +64,36 @@ export async function fileToShot(file: File, angle: Angle): Promise<{ shot?: Sho
   if (q.brightness > 238) return { error: "Too bright or washed out. Avoid backlight." };
   if (q.sharpness < 2.2) return { error: "It is blurry. Hold the phone steady and try again." };
 
+  /* Only a model that cannot LOAD degrades to the server-side verdicts (offline,
+     blocked wasm). A model that is present but throws must never pass a photo. */
+  let lm: Awaited<ReturnType<typeof getLandmarker>>;
   try {
-    const lm = await getLandmarker();
-    const res = lm.detect(cv);
+    lm = await getLandmarker();
+  } catch (e) {
+    console.warn("face validator unavailable:", e);
+    return {
+      shot: { dataUrl: cv.toDataURL("image/jpeg", 0.85), width: cv.width, height: cv.height },
+    };
+  }
+
+  /* detect() throws when the landmarker was left in VIDEO mode by an interrupted
+     camera sheet: restore IMAGE mode and try once more, then FAIL CLOSED */
+  const detectImage = async (input: HTMLCanvasElement) => {
+    try {
+      return lm.detect(input);
+    } catch {
+      await lm.setOptions({ runningMode: "IMAGE" });
+      return lm.detect(input);
+    }
+  };
+
+  try {
+    const res = await detectImage(cv);
     const v = judge(res, cv, angle);
     if (!v.ok) return { error: v.why };
 
     const norm = normalizeTo34(cv, res) as HTMLCanvasElement;
-    const res2 = lm.detect(norm);
+    const res2 = await detectImage(norm);
     const v2 = judge(res2, norm, angle);
     if (!v2.ok) return { error: v2.why };
 
@@ -79,12 +101,8 @@ export async function fileToShot(file: File, angle: Angle): Promise<{ shot?: Sho
       shot: { dataUrl: norm.toDataURL("image/jpeg", 0.85), width: norm.width, height: norm.height, yaw: v2.metrics?.yaw },
     };
   } catch (e) {
-    /* Validator unavailable (offline, blocked wasm). Do not strand the visitor;
-       the vision model's per-photo verdicts still gate at analyze time. */
-    console.warn("face validator unavailable:", e);
-    return {
-      shot: { dataUrl: cv.toDataURL("image/jpeg", 0.85), width: cv.width, height: cv.height },
-    };
+    console.warn("face check failed:", e);
+    return { error: "The face check could not run on that photo. Please try again." };
   }
 }
 

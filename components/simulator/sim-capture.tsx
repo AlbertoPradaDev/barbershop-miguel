@@ -13,6 +13,7 @@ import type { Angle } from "@/lib/simulator/types";
 import { fileToShot, type Shot } from "@/lib/simulator/client/photo";
 import { getLandmarker } from "@/lib/simulator/client/landmarker";
 import { PillButton } from "@/components/ui/pill-button";
+import { SimCamera, cameraAvailable } from "@/components/simulator/sim-camera";
 
 const SLOTS: { angle: Angle; title: string; hint: string }[] = [
   { angle: "front", title: "Front", hint: "Look straight at the camera" },
@@ -38,6 +39,11 @@ export function SimCapture({
   const [busy, setBusy] = useState<Partial<Record<Angle, boolean>>>({});
   const [localErr, setLocalErr] = useState<Partial<Record<Angle, string>>>({});
   const inputs = useRef<Partial<Record<Angle, HTMLInputElement | null>>>({});
+  const [camAngle, setCamAngle] = useState<Angle | null>(null);
+  /* once the in-page camera has failed (permission refused, no webcam, camera
+     busy, model unavailable) every later Take photo goes to the OS camera
+     through the file input instead of reopening a sheet that will fail again */
+  const camFailed = useRef(false);
   const count = SLOTS.filter((s) => photos[s.angle]).length;
 
   /* warm the face validator while the visitor reads the instructions */
@@ -45,7 +51,14 @@ export function SimCapture({
     getLandmarker().catch(() => {});
   }, []);
 
+  /* Take photo: the live auto-capture sheet where the browser allows it (secure
+     context + getUserMedia), otherwise the native camera through the file input.
+     Upload: the file picker. Both hand a File to the same gates. */
   const open = (angle: Angle, camera: boolean) => {
+    if (camera && cameraAvailable() && !camFailed.current) {
+      setCamAngle(angle);
+      return;
+    }
     const input = inputs.current[angle];
     if (!input) return;
     if (camera) input.setAttribute("capture", "user");
@@ -69,10 +82,29 @@ export function SimCapture({
 
   return (
     <section>
+      {camAngle && (
+        <SimCamera
+          angle={camAngle}
+          onShot={(file) => {
+            const a = camAngle;
+            setCamAngle(null);
+            handle(a, file);
+          }}
+          onClose={(reason) => {
+            const a = camAngle;
+            setCamAngle(null);
+            if (reason && a) {
+              camFailed.current = true;
+              setLocalErr((e) => ({ ...e, [a]: reason + " Tap Take photo again to use your phone's own camera." }));
+            }
+          }}
+        />
+      )}
       <h2 className="text-h2 max-md:text-mh2 font-semibold">Three photos, better recommendation</h2>
       <p className="mt-16 max-w-[560px] text-p1 max-md:text-mp1 text-muted">
         A fade only shows from the side, which is why we ask for both profiles as well as the
-        front. Find light facing you and take off any cap or sunglasses.
+        front. Tap Take photo and the camera fires by itself once you are turned the right way;
+        find light facing you and take off any cap or sunglasses.
       </p>
 
       <div className="mt-32 grid grid-cols-3 gap-16 max-md:grid-cols-1">

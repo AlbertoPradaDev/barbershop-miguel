@@ -86,11 +86,12 @@ const securityHeaders = [
   /* The site links out to Booksy and Instagram. Send the origin, never the full
      path, so outbound clicks cannot leak what the visitor was reading. */
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  /* Nothing here uses any of these, so refuse them outright rather than leaving
-     the door open for whatever gets added later. */
+  /* The haircut simulator's live capture is the one legitimate camera user, so
+     camera is allowed for this origin only; the rest stay refused outright
+     rather than leaving the door open for whatever gets added later. */
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
   },
   /* Two years, subdomains included. Harmless locally (HSTS is ignored over
      plain http) and correct the moment this is on a real domain. */

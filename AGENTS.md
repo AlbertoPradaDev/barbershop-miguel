@@ -119,3 +119,21 @@ disagree. It must stay OFF in production: the serverless filesystem is
 ephemeral, and storing visitor photos would need a consent flow first. The log
 is for improving the product by hand, prompts, gates and scoring reviewed
 against real results; nothing retrains automatically.
+
+### Live auto-capture and hero actions (added 2026-09-07)
+
+`components/simulator/sim-camera.tsx` opens the camera in-page (getUserMedia) and
+fires the shot ITSELF once the slot's yaw gate holds for 700ms, speaking the
+correction meanwhile (ANGLES.live in measure.js). The sheet and the stream open
+in the tap; the face model arms in the background. The preview is mirrored, the
+grabbed frame is not (yaw sign must match the upload path), and the shot goes
+back through the same fileToShot gates as an upload. The landmarker singleton is
+switched to VIDEO mode for the sheet and restored to IMAGE before the gates run.
+Needs a secure context: over plain http the button falls back to the native
+camera through the file input. `Permissions-Policy` therefore allows
+`camera=(self)`; everything else stays refused. The hero plate now carries the
+two actions a visitor came for (Book now to Booksy, Try a haircut to /simulator)
+as PillButtons under the name; static, not masked, so they exist even when the
+sequence is skipped. QA: `rubric/qa-harnesses/barbershop-miguel/camera-qa.mjs`
+feeds an MJPEG of a real face as a fake webcam (frames must have EVEN
+dimensions or Chrome's fake device decodes to a 2x2 placeholder).
