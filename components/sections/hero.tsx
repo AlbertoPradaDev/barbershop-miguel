@@ -5,11 +5,13 @@ import Image from "next/image";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { SITE } from "@/lib/content/site";
 import { miguelAtWork } from "@/lib/content/photos";
+import { PillButton } from "@/components/ui/pill-button";
 
 /*
  * Hero: a full bleed photograph of the barber at work with a single white plate
- * centred on it carrying the shop name, and two lines of standing detail along
- * the bottom edge.
+ * centred on it carrying the shop name and the two things a visitor came to do
+ * (book the chair, try a haircut), and two lines of standing detail along the
+ * bottom edge.
  *
  * Ported from the Awwwards card awwwards/hero/10. This section is the SECOND
  * half of one animation whose first half lives in
@@ -84,9 +86,15 @@ export function Hero() {
         desktop. On phones it takes 75% of the width, or the name cannot be set
         inside it.
       */}
+      {/*
+        The hero sits in the dark band, so inside the white plate the tokens
+        must flip back: without data-scheme="light" the outline action's label
+        (token text) renders white on white and simply vanishes.
+      */}
       <div
         data-hero-card
-        className="absolute top-1/2 left-1/2 grid h-[70%] w-[30%] -translate-x-1/2 -translate-y-1/2 place-items-center bg-bone text-ink max-md:h-[62%] max-md:w-[75%]"
+        data-scheme="light"
+        className="absolute top-1/2 left-1/2 flex h-[70%] w-[30%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-32 bg-bone text-ink max-md:h-[62%] max-md:w-[75%] max-md:gap-24"
       >
         <h1
           data-masked
@@ -95,6 +103,23 @@ export function Hero() {
         >
           {SITE.shortName}
         </h1>
+        {/*
+          The two actions, on the plate itself so they are the first thing read
+          after the name. Booking is the site's one outbound push (Booksy); the
+          simulator is the in-house one. Static, not masked: the sequence reveals
+          the plate as a whole, and if it never runs they must simply be there.
+        */}
+        <div
+          data-hero-actions
+          className="flex flex-wrap items-center justify-center gap-16 px-16 max-md:flex-col max-md:gap-12"
+        >
+          <PillButton variant="solid" href={SITE.bookingUrl} external>
+            Book now
+          </PillButton>
+          <PillButton variant="outline" href="/simulator">
+            Try a haircut
+          </PillButton>
+        </div>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-64 py-48 pr-144 max-md:flex-col max-md:items-start max-md:gap-8 max-md:px-20 max-md:py-28 max-md:pr-96">

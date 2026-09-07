@@ -57,7 +57,14 @@ import type { NextConfig } from "next";
  */
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  /*
+   * 'wasm-unsafe-eval' exists for the haircut simulator's on-device face
+   * validator (MediaPipe, self-hosted under /public/vendor). Compiling ANY
+   * WebAssembly requires it; without it the wasm is refused silently and the
+   * photo gates never arm. It permits wasm compilation only, not JS eval, and
+   * script-src still refuses every external origin.
+   */
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "frame-src https://www.openstreetmap.org",
@@ -79,11 +86,12 @@ const securityHeaders = [
   /* The site links out to Booksy and Instagram. Send the origin, never the full
      path, so outbound clicks cannot leak what the visitor was reading. */
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  /* Nothing here uses any of these, so refuse them outright rather than leaving
-     the door open for whatever gets added later. */
+  /* The haircut simulator's live capture is the one legitimate camera user, so
+     camera is allowed for this origin only; the rest stay refused outright
+     rather than leaving the door open for whatever gets added later. */
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
   },
   /* Two years, subdomains included. Harmless locally (HSTS is ignored over
      plain http) and correct the moment this is on a real domain. */

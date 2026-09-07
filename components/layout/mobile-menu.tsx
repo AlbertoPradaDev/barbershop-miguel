@@ -314,6 +314,11 @@ export function MobileMenu({
   );
 
   const handleLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    /* route links (the simulator) navigate normally; the menu just closes */
+    if (!href.startsWith("#")) {
+      onClose();
+      return;
+    }
     event.preventDefault();
     onClose();
     const reduced = window.matchMedia(REDUCED_QUERY).matches;

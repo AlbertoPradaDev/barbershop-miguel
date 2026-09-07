@@ -313,6 +313,9 @@ export function Navbar() {
                   data-nav-item
                   href={link.href}
                   onClick={(event) => {
+                    /* route links (the simulator) navigate normally; only in
+                       page anchors go through the smooth scroll */
+                    if (!link.href.startsWith("#")) return;
                     event.preventDefault();
                     scrollToSection(link.href);
                   }}

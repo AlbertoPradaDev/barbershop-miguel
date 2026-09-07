@@ -57,3 +57,83 @@ Buttons follow this too, in two registers only:
 - No bounce/elastic easing on any button or magnetic release.
 - The floating theme and WhatsApp controls are round, borderless and have **no hover state at all**: only `:focus-visible` responds.
 - **No transition bands between sections.** Sections sit directly against each other; content still animates in and out on scroll, but nothing is inserted at the seams.
+
+
+## Haircut simulator (/simulator), added 2026-09-02
+
+AI try-on ported from Steven's CorteAI build: three photos with an on-device face gate,
+a vision analysis, a ranked recommendation over `lib/simulator/catalog.ts` (twenty
+styles), four generated views per cut (front/left/right anchored on that angle's own
+photo, back derived from both profiles and labelled illustrative), a drag before/after
+comparator, a compare picker, a barber card and a shareable canvas card.
+
+Invariants that look odd but are load bearing:
+
+- `script-src 'wasm-unsafe-eval'` in next.config.ts exists for the MediaPipe validator
+  (self-hosted under `public/vendor`, ~23MB, lazy-loaded). Without it the wasm is
+  refused silently and the face gate degrades to accepting anything.
+- The landmarker loads via a NATIVE dynamic import with `webpackIgnore`/`turbopackIgnore`
+  comments and a variable specifier: a Function-wrapped import is eval and the CSP
+  rightly refuses it; a bare literal would get bundled or break type checking.
+- The card blob is decoded by hand (atob): `fetch()` of a data: URL falls under
+  `connect-src 'self'` and is refused by the CSP.
+- `decide()` in opening-sequence.tsx gates the intro to `pathname === "/"`: on any
+  other route the timeline used to bail on the missing hero AFTER phase was already
+  "run", leaving the fixed z-81 panels mounted and silently eating every pointer event.
+- navbar/mobile-menu/footer link handlers pass non-hash hrefs through untouched; the
+  smooth-scroll interception is for in-page anchors only.
+- `simulator-flow.tsx` reads photos/analysis through refs, never closure state: the
+  flow schedules its own retries and a stale closure re-enters with empty photos and
+  dies silently. Failed views re-fire once automatically; the simulate route tries the
+  primary provider twice then the fallback (`SIM_FAIL_ONCE` / `SIM_FAIL_PROVIDER` are
+  inert test injectors for proving that ladder, never set them in a real serve).
+- Internal profile enum values are Spanish (they are the vision schema contract shared
+  with the catalog's hairTypes); the UI translates for display in sim-results only.
+
+Env: see `.env.example`. With no keys the simulator runs in a labelled TEST mode, free.
+Live costs money: about $0.01 per analysis and $0.12 per cut (four views via KIE).
+QA: `rubric/qa-harnesses/barbershop-miguel/simulator-qa.mjs` (31 checks, MOCK only)
+plus `_home-regression.mjs`. On Steven's machine builds need `npx next build --webpack`.
+
+### Improvement log (added 2026-09-03)
+
+`NEXT_PUBLIC_SIM_STORE=1` (BUILD-time flag) saves every CONSENTED simulator
+session (the capture step gains an optional checkbox; without the tick nothing
+is stored, even with the flag on). Two backends behind one seam in
+`lib/simulator/history.ts`: **Vercel Blob** when `BLOB_READ_WRITE_TOKEN` is
+present (store `mrsociety-simulator-log`, access PRIVATE so bare URLs answer
+403; the token is already connected to this project in all three Vercel
+environments, so the deployed site and local serves write to the SAME dataset),
+falling back to the local filesystem at `data/simulator-sessions/`
+(`SIM_STORE_BACKEND=fs` forces it, which is also how the full QA suite runs so
+it does not burn Blob operations). Blob has no append, so verdicts and
+generation metadata are one small JSON object per event. Watch the free-tier
+operation quota: the review page is capped at twelve sessions per load for
+that reason. Each session stores: the three input photos, `analysis.json`
+(profile, preferences, ranking), every generated view with provider and attempt
+metadata (`generations.jsonl`), the card, and append-only human verdicts
+(`feedback.jsonl`, written by the "Looks right / Looks off" chips under each
+generated view). Review at `/simulator/history` (404s when the flag is off).
+The same flag flips every privacy line in the UI, so copy and behaviour cannot
+disagree. It must stay OFF in production: the serverless filesystem is
+ephemeral, and storing visitor photos would need a consent flow first. The log
+is for improving the product by hand, prompts, gates and scoring reviewed
+against real results; nothing retrains automatically.
+
+### Live auto-capture and hero actions (added 2026-09-07)
+
+`components/simulator/sim-camera.tsx` opens the camera in-page (getUserMedia) and
+fires the shot ITSELF once the slot's yaw gate holds for 700ms, speaking the
+correction meanwhile (ANGLES.live in measure.js). The sheet and the stream open
+in the tap; the face model arms in the background. The preview is mirrored, the
+grabbed frame is not (yaw sign must match the upload path), and the shot goes
+back through the same fileToShot gates as an upload. The landmarker singleton is
+switched to VIDEO mode for the sheet and restored to IMAGE before the gates run.
+Needs a secure context: over plain http the button falls back to the native
+camera through the file input. `Permissions-Policy` therefore allows
+`camera=(self)`; everything else stays refused. The hero plate now carries the
+two actions a visitor came for (Book now to Booksy, Try a haircut to /simulator)
+as PillButtons under the name; static, not masked, so they exist even when the
+sequence is skipped. QA: `rubric/qa-harnesses/barbershop-miguel/camera-qa.mjs`
+feeds an MJPEG of a real face as a fake webcam (frames must have EVEN
+dimensions or Chrome's fake device decodes to a 2x2 placeholder).

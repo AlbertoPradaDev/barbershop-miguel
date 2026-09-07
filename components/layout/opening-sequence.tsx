@@ -87,6 +87,17 @@ function decide(): { phase: Phase; reason: Reason } {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return { phase: "skip", reason: "reduced-motion" };
   }
+  /*
+   * The sequence drives the hero, and the hero only exists on the homepage.
+   * On any other route (the simulator was the first) the timeline used to bail
+   * on the missing hero AFTER the phase was already "run", which left the
+   * fixed z-81 panels mounted and silently eating every pointer event: the
+   * page looked fine and nothing was clickable. Decide by route instead, so
+   * other routes never mount the panels at all.
+   */
+  if (window.location.pathname !== "/") {
+    return { phase: "skip", reason: "suppressed" };
+  }
   const forced = new URLSearchParams(window.location.search).get("intro");
   if (forced === "0") return { phase: "skip", reason: "suppressed" };
   if (forced === "1") return { phase: "run", reason: "forced" };

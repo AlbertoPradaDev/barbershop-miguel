@@ -99,6 +99,9 @@ export function Footer() {
      the fixed header, exactly like the nav does. */
   const onNavClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+      /* route links (the simulator) navigate normally; querySelector would
+         throw on a path anyway */
+      if (!href.startsWith("#")) return;
       const target = document.querySelector<HTMLElement>(href);
       if (!target) return;
       event.preventDefault();
